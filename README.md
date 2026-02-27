@@ -136,6 +136,45 @@ Minimum acceptance bar:
 - Naming and dependency identifier policies pass.
 - Compatibility notes are provided when release impact exists.
 
+## Contributing new dashboard templates
+
+Pull requests for new dashboard templates are welcome.
+
+For a new template PR, include all of the following:
+
+1. A new template file in `templates/` with a versioned, immutable `template_id` (for example `user-badges-overview-v1`).
+2. A matching entry in `dashboard_registry.json` with all required schema fields.
+3. A matching preference guide in `preferences/` referenced by `preferences.doc_asset_path`.
+4. Notes in the PR description covering audience, lifecycle state, and compatibility impact.
+
+If you are unsure about scope or naming, open a discussion in the main repository (`ccpk1/ChoreOps`) and then submit a draft PR here.
+
+## Dashboard development standards (required)
+
+All dashboard template PRs must follow these standards:
+
+- Canonical standards reference: [Dashboard Template Guide](https://github.com/ccpk1/choreops/blob/main/docs/DASHBOARD_TEMPLATE_GUIDE.md)
+
+- **Dynamic, instance-aware lookup patterns only**
+  - Always use dynamic lookup patterns for dashboard helper entities and related sensors.
+  - Lookups must be integration-instance aware.
+  - Do not manually construct or hardcode entity IDs.
+
+- **Replacement field patterns are strict**
+  - Follow established replacement field patterns exactly.
+  - Do not introduce ad-hoc replacement token formats.
+
+- **User-facing strings must use the translation sensor**
+  - Obtain user-facing text via `ui()` translation lookups.
+  - Reuse an existing translation key whenever possible.
+  - If no suitable key exists, add it to dashboard English source translations (`translations/en_dashboard.json`) so the translation workflow can propagate additional languages.
+
+- **Graceful error handling is required**
+  - Validate required entities before building card content (for example dashboard helper, translation sensor, and core sensor references).
+  - If required entities are missing, `unknown`, or `unavailable`, render a clear fallback guidance card and set a guard flag (for example `skip_render = true`).
+  - Skip normal card rendering when guard validation fails.
+  - Do not hard-fail the template renderer due to missing required entities.
+
 ## Review gates and approvals
 
 - Template-only changes: maintainer approval.
