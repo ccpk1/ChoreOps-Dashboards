@@ -34,7 +34,7 @@ jobs:
 
             const labelsToAdd = [
               "l10n",
-              "automation: translations",
+              "automation: l10n",
               "priority: low",
               "area: dashboard",
             ];
