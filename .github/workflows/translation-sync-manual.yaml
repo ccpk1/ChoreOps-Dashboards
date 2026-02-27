@@ -1,0 +1,80 @@
+name: Dashboard Translation Sync
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "translations/en_dashboard.json"
+      - "crowdin.yml"
+      - ".github/workflows/translation-sync-manual.yaml"
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: "Branch to sync translations for"
+        required: false
+        type: string
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  synchronize-with-crowdin:
+    name: Sync dashboard translations
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.branch || github.ref_name }}
+
+      - name: Validate Crowdin configuration
+        id: crowdin_preflight
+        env:
+          CROWDIN_PROJECT_ID: ${{ secrets.CROWDIN_PROJECT_ID }}
+          CROWDIN_PERSONAL_TOKEN: ${{ secrets.CROWDIN_PERSONAL_TOKEN }}
+        run: |
+          if [ -z "$CROWDIN_PROJECT_ID" ] || [ -z "$CROWDIN_PERSONAL_TOKEN" ]; then
+            echo "run_crowdin=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::Crowdin secrets are not configured. Skipping dashboard translation sync."
+            echo "::notice::Set CROWDIN_PROJECT_ID and CROWDIN_PERSONAL_TOKEN repository secrets to enable this workflow."
+          else
+            echo "run_crowdin=true" >> "$GITHUB_OUTPUT"
+            echo "::notice::Crowdin secrets detected. Dashboard translation sync will run."
+          fi
+
+      - name: Upload dashboard source
+        if: steps.crowdin_preflight.outputs.run_crowdin == 'true'
+        uses: crowdin/github-action@v2
+        with:
+          upload_sources: true
+          upload_translations: false
+          download_translations: false
+          create_pull_request: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CROWDIN_PROJECT_ID: ${{ secrets.CROWDIN_PROJECT_ID }}
+          CROWDIN_PERSONAL_TOKEN: ${{ secrets.CROWDIN_PERSONAL_TOKEN }}
+
+      - name: Download dashboard translations
+        if: steps.crowdin_preflight.outputs.run_crowdin == 'true'
+        uses: crowdin/github-action@v2
+        with:
+          upload_sources: false
+          upload_translations: false
+          download_translations: true
+          create_pull_request: true
+          pull_request_title: "chore(l10n): sync dashboard translations from Crowdin"
+          commit_message: "chore(l10n): sync dashboard translations from Crowdin"
+          pull_request_base_branch_name: ${{ inputs.branch || github.ref_name }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CROWDIN_PROJECT_ID: ${{ secrets.CROWDIN_PROJECT_ID }}
+          CROWDIN_PERSONAL_TOKEN: ${{ secrets.CROWDIN_PERSONAL_TOKEN }}
+
+      - name: Crowdin sync skipped
+        if: steps.crowdin_preflight.outputs.run_crowdin != 'true'
+        run: |
+          echo "Dashboard translation sync skipped: repository secrets are not configured."

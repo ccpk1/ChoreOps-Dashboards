@@ -1,0 +1,14 @@
+# Crowdin Configuration File
+# This maps your local file structure to the Crowdin project
+# Norwegian translations required mapping because Crowdin uses 'no' (generic) for Google Translate, but Home Assistant requires 'nb' (Bokmål).
+
+preserve_hierarchy: true
+
+files:
+  # 1. Dashboard Translations (custom translations directory)
+  # Maps: /translations_custom/dashboards/translations/en_dashboard.json -> /translations_custom/dashboards/translations/fr_dashboard.json
+  - source: /custom_components/choreops/dashboards/translations/en_dashboard.json
+    translation: /custom_components/choreops/dashboards/translations/%two_letters_code%_dashboard.json
+    languages_mapping:
+      two_letters_code:
+        "no": nb
