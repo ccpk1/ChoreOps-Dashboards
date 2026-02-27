@@ -86,12 +86,11 @@ Optional metadata (not currently populated in the checked-in manifest):
 
 ## Release versioning policy
 
-This repository uses `v`-prefixed SemVer tags.
+This repository uses SemVer release versions without a `v` prefix.
 
-- Stable: `vX.Y.Z`
-- Beta: `vX.Y.Z-beta.N`
-- Release candidate: `vX.Y.Z-rc.N`
-- Optional dev snapshot format: `vX.Y.Z-dev.YYYYMMDD+<shortsha>`
+- Stable: `X.Y.Z`
+- Beta: `X.Y.Z-beta.N`
+- Release candidate: `X.Y.Z-rc.N`
 
 Published tags are immutable.
 
@@ -104,7 +103,7 @@ Record compatibility for each dashboard release in release notes or PR descripti
 
 | Integration release | Dashboard registry release | Channel | Compatibility status | Notes                               |
 | ------------------- | -------------------------- | ------- | -------------------- | ----------------------------------- |
-| `v0.5.0-beta.5`     | `v0.1.0-beta.1`            | beta    | verified             | Initial dashboard registry baseline |
+| `0.5.0-beta.5`      | `0.1.0-beta.1`             | beta    | verified             | Initial dashboard registry baseline |
 
 Compatibility status values:
 
