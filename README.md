@@ -11,13 +11,13 @@ This repository is the dedicated source for Lovelace dashboard templates used by
 
 - Publish dashboard template updates independently from integration releases
 - Enable safe hotfixes for UI/template issues
-- Provide a registry contract (`manifest.json`) for dynamic template discovery
+- Provide a registry contract (`dashboard_registry.json`) for dynamic template discovery
 
 ## Repository layout
 
 ```text
 .
-├── manifest.json              # Dashboard registry contract
+├── dashboard_registry.json    # Dashboard registry contract
 ├── templates/                 # Dashboard template YAML assets
 │   ├── *.yaml
 ├── preferences/               # Per-template preference docs
@@ -46,7 +46,7 @@ Template IDs are immutable once published; new behavior variants should ship as 
 
 ## Manifest contract (schema v1)
 
-Current required template fields in `manifest.json`:
+Current required template fields in `dashboard_registry.json`:
 
 - `template_id`
 - `display_name`
@@ -122,7 +122,7 @@ Compatibility status values:
 ## Template submission workflow
 
 1. Add or update template YAML assets under `templates/`.
-2. Add or update matching records in `manifest.json`.
+2. Add or update matching records in `dashboard_registry.json`.
 3. Confirm metadata is complete:
 
 - required schema v1 fields (`template_id`, `display_name`, `description`, `audience`, `category`, `lifecycle_state`, `source.path`, `preferences.doc_asset_path`)
