@@ -7,6 +7,8 @@ Use this checklist before publishing dashboard registry releases.
 - [ ] Use SemVer release versions without `v` prefix (`X.Y.Z`).
 - [ ] For prerelease testing, use SemVer prerelease versions (`X.Y.Z-beta.N`, `X.Y.Z-rc.N`).
 - [ ] Confirm channel intent is explicit: `beta` for validation, `stable` for production.
+- [ ] Update top-level `release_version` in `dashboard_registry.json` to the exact release tag value.
+- [ ] Confirm `release_version` naming matches policy (`X.Y.Z`, `X.Y.Z-beta.N`, `X.Y.Z-rc.N`).
 
 ## 2) Content readiness
 
@@ -28,6 +30,7 @@ Checklist:
 
 - [ ] No failing tests.
 - [ ] Release sanity checks pass with no warnings.
+- [ ] `python utils/release_sanity.py --strict` validates both `release_version` and `min_integration_version` naming patterns.
 - [ ] No temporary debug edits.
 - [ ] Working tree is clean before tagging.
 

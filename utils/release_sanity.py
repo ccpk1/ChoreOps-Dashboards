@@ -42,6 +42,8 @@ REQUIRED_DEPENDENCY_SECTIONS = {"required", "recommended"}
 VALID_AUDIENCE = {"user", "approver", "mixed"}
 VALID_SOURCE_TYPES = {"vendored", "remote"}
 VALID_LIFECYCLE = {"active", "deprecated", "archived"}
+RELEASE_VERSION_RE = re.compile(r"^\d+\.\d+\.\d+(?:-(?:beta|rc)\.\d+)?$")
+INTEGRATION_VERSION_RE = re.compile(r"^\d+\.\d+\.\d+(?:-(?:beta|rc)\.\d+)?$")
 
 HARDCODED_EID_RE = re.compile(
     r"\b(?:sensor|binary_sensor|button|select|input_boolean|input_text|"
@@ -80,6 +82,27 @@ def _load_json(path: Path, result: CheckResult) -> Any:
     return None
 
 
+def _validate_version_string(
+    *,
+    value: Any,
+    field_name: str,
+    context: str,
+    result: CheckResult,
+    version_re: re.Pattern[str],
+) -> None:
+    """Validate that a version field follows supported naming standards."""
+    if not isinstance(value, str) or not value.strip():
+        result.add_error(f"{context}: {field_name} must be a non-empty string")
+        return
+
+    normalized = value.strip()
+    if version_re.match(normalized) is None:
+        result.add_error(
+            f"{context}: {field_name} '{normalized}' must follow supported release naming "
+            "(X.Y.Z, X.Y.Z-beta.N, X.Y.Z-rc.N)"
+        )
+
+
 def _validate_registry(result: CheckResult) -> dict[str, Any] | None:
     """Validate top-level registry shape and template records."""
     payload = _load_json(REGISTRY_PATH, result)
@@ -89,6 +112,20 @@ def _validate_registry(result: CheckResult) -> dict[str, Any] | None:
     if not isinstance(payload, dict):
         result.add_error("dashboard_registry.json must be a JSON object")
         return None
+
+    release_version = payload.get("release_version")
+    if release_version is None:
+        result.add_error(
+            "dashboard_registry.json must contain top-level release_version"
+        )
+    else:
+        _validate_version_string(
+            value=release_version,
+            field_name="release_version",
+            context="dashboard_registry.json",
+            result=result,
+            version_re=RELEASE_VERSION_RE,
+        )
 
     templates = payload.get("templates")
     if not isinstance(templates, list):
@@ -126,6 +163,25 @@ def _validate_registry(result: CheckResult) -> dict[str, Any] | None:
             result.add_error(
                 f"{context}: invalid lifecycle_state "
                 f"'{lifecycle}' (allowed: {sorted(VALID_LIFECYCLE)})"
+            )
+
+        _validate_version_string(
+            value=template.get("min_integration_version"),
+            field_name="min_integration_version",
+            context=context,
+            result=result,
+            version_re=INTEGRATION_VERSION_RE,
+        )
+
+        if "max_integration_version" in template and template.get(
+            "max_integration_version"
+        ) not in (None, ""):
+            _validate_version_string(
+                value=template.get("max_integration_version"),
+                field_name="max_integration_version",
+                context=context,
+                result=result,
+                version_re=INTEGRATION_VERSION_RE,
             )
 
         source = template.get("source")
