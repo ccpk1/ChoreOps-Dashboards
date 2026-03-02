@@ -7,6 +7,19 @@ This repository is the dedicated source for Lovelace dashboard templates used by
 - `ccpk1/choreops` provides integration/backend logic
 - `ccpk1/choreops-dashboards` provides dashboard manifests and template YAML assets
 
+## Repository roles and support policy
+
+The primary ChoreOps product repository is [`ccpk1/choreops`](https://github.com/ccpk1/choreops).
+
+- Install and configure ChoreOps from the integration repository
+- Report user-facing bugs, integration behavior issues, and feature requests in the integration repository issues
+- Use this dashboards repository for dashboard template/registry asset work only
+
+Issue routing:
+
+- Integration/runtime/support issues: <https://github.com/ccpk1/choreops/issues>
+- Dashboard template asset issues (template YAML, registry metadata, preference docs, dashboard translation assets): <https://github.com/ccpk1/choreops-dashboards/issues>
+
 ## Purpose
 
 - Publish dashboard template updates independently from integration releases
