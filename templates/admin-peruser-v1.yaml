@@ -4,9 +4,16 @@
 <#-- ============================================= --#>
 <#--                                             --#>
 <#-- Admin dashboard: System management         --#>
-<#-- Uses SystemDashboardAdminAssigneeSelect entity  --#>
+<#-- Uses SystemDashboardAdminUserSelect entity      --#>
 <#--                                             --#>
 <#-- Uses integration.entry_id injection for instance-safe selector lookup --#>
+<#--                                             --#>
+<#-- Snippet tokens: template_snippets.admin_setup_peruser,              --#>
+<#-- template_snippets.admin_validation_missing_selector,                --#>
+<#-- template_snippets.admin_validation_invalid_selection,               --#>
+<#-- template_snippets.user_override_helper, template_snippets.meta_stamp --#>
+<#-- Stamp format (canonical): META STAMP: {template_id} • {release} • {generated_at} --#>
+<#-- Stamp placement: first line inside each card template block after card header comment --#>
 <#--                                             --#>
 <#-- All HA Jinja2 {{ }} syntax preserved       --#>
 <#-- ============================================= --#>
@@ -26,23 +33,13 @@
             template: >-
               {#-- ===== ADMIN HEADER ===== --#}
 
+              << template_snippets.meta_stamp >>
+
               {#-- 1. Resolve per-user dashboard helper (dynamic lookup) --#}
 
-              {%- set name = '<< user.name >>' -%}
-              {%- set user_id = '<< user.user_id >>' -%}
-              {%- set entry_id = '<< integration.entry_id >>' -%}
-              {%- set lookup_key = entry_id ~ ':' ~ user_id -%}
+              << template_snippets.user_override_helper >>
 
-              {%- set admin_selector_eid = integration_entities('choreops')
-                  | select('search', '^sensor\\.')
-                  | list
-                  | expand
-                  | selectattr('attributes.purpose', 'defined')
-                  | selectattr('attributes.purpose', 'eq', 'purpose_dashboard_helper')
-                  | selectattr('attributes.dashboard_lookup_key', 'eq', lookup_key)
-                  | map(attribute='entity_id')
-                  | first
-                  | default('', true) -%}
+              << template_snippets.admin_setup_peruser >>
 
               {{
                 {
@@ -75,27 +72,15 @@
                 columns: 1
               card_param: cards
               filter:
-                template: >-
+                template: |-
                   {#-- ===== APPROVAL ACTIONS CARD ===== --#}
 
+                  << template_snippets.meta_stamp >>
 
-                  {#-- 1. Resolve per-user dashboard helper (dynamic lookup) --#}
 
-                  {%- set name = '<< user.name >>' -%}
-                  {%- set user_id = '<< user.user_id >>' -%}
-                  {%- set entry_id = '<< integration.entry_id >>' -%}
-                  {%- set lookup_key = entry_id ~ ':' ~ user_id -%}
+                  {#-- 1. User Configuration --#}
 
-                  {%- set admin_selector_eid = integration_entities('choreops')
-                      | select('search', '^sensor\\.')
-                      | list
-                      | expand
-                      | selectattr('attributes.purpose', 'defined')
-                      | selectattr('attributes.purpose', 'eq', 'purpose_dashboard_helper')
-                      | selectattr('attributes.dashboard_lookup_key', 'eq', lookup_key)
-                      | map(attribute='entity_id')
-                      | first
-                      | default('', true) -%}
+                  << template_snippets.user_override_helper >>
 
                   {%- set pref_column_count = 2 -%}
 
@@ -104,56 +89,32 @@
                   {%- set pref_column_count = pref_column_count | int(default=2) -%}
 
 
-                  {#-- 2. Validate Admin Selector Exists --#}
+                  {#-- 2. Dynamic Lookups & Validations --#}
 
-                  {%- if admin_selector_eid == '' -%}
-                    {{
-                      {
-                        'type': 'markdown',
-                        'content': "⚠️ **Dashboard Helper Not Found**\n\nThe per-user dashboard helper entity could not be found for this view.\n\nThe integration may need to be restarted or reloaded.\nCheck Settings → Integrations → ChoreOps."
-                      }
-                    }},
-                    {%- set skip_render = true -%}
-                  {%- else -%}
-                    {%- set selected_assignee_name = name -%}
+                  << template_snippets.admin_setup_peruser >>
 
-                    {#-- 3. Validate Assignee Selected --#}
-                    {%- if selected_assignee_name in ['None', '', 'unknown', 'unavailable'] -%}
-                      {{
-                        {
-                          'type': 'markdown',
-                          'content': "ℹ️ **User Not Available**\n\nThis per-user admin view does not have a valid user context yet."
-                        }
-                      }},
-                      {%- set skip_render = true -%}
-                    {%- else -%}
-                      {%- set name = selected_assignee_name -%}
 
-                      {#-- 4. Initialize Variables --#}
+                  << template_snippets.admin_validation_missing_selector >>
 
-                        {%- set dashboard_helper = admin_selector_eid
-                          | default("err-dashboard_helper_missing", true) -%}
+                  << template_snippets.admin_validation_invalid_selection >>
 
-                      {%- set ns = namespace(
-                        approve_chore_buttons=[],
-                        approve_reward_buttons=[],
-                        group_cards=[],
-                        has_approvals='false'
-                      ) -%}
+                  {%- if not skip_render -%}
 
-                      {#-- 5. Validate Dashboard Helper --#}
-                      {%- if states(dashboard_helper) in ['unknown', 'unavailable'] -%}
-                        {{
-                          {
-                            'type': 'markdown',
-                            'content': "⚠️ **Dashboard Configuration Error**\n\nCannot find dashboard helper for: `" ~ name ~ "`\n\nThe integration may not have initialized properly.\nCheck Settings → Integrations → ChoreOps."
-                          }
-                        }},
-                        {%- set skip_render = true -%}
-                      {%- else -%}
-                        {%- set skip_render = false -%}
-                      {%- endif -%}
-                    {%- endif -%}
+                    {#-- 3. Initialize Variables --#}
+
+                    {%- set selected_user_name = name -%}
+
+                    {%- set dashboard_helper = admin_selector_eid
+                      | default("err-dashboard_helper_missing", true) -%}
+
+                    {%- set ns = namespace(
+                      approve_chore_buttons=[],
+                      approve_reward_buttons=[],
+                      group_cards=[],
+                      has_approvals='false'
+                    ) -%}
+
+                    << template_snippets.admin_validation_dashboard_helper >>
                   {%- endif -%}
 
                   {%- if not skip_render -%}
@@ -274,62 +235,35 @@
                 columns: 1
               card_param: cards
               filter:
-                template: >-
+                template: |-
                   {#-- ===== PARENT DASHBOARD ===== --#}
 
-
-                  {#-- 1. Resolve per-user dashboard helper (dynamic lookup) --#}
-
-                  {%- set name = '<< user.name >>' -%}
-                  {%- set user_id = '<< user.user_id >>' -%}
-                  {%- set entry_id = '<< integration.entry_id >>' -%}
-                  {%- set lookup_key = entry_id ~ ':' ~ user_id -%}
-
-                  {%- set admin_selector_eid = integration_entities('choreops')
-                      | select('search', '^sensor\\.')
-                      | list
-                      | expand
-                      | selectattr('attributes.purpose', 'defined')
-                      | selectattr('attributes.purpose', 'eq', 'purpose_dashboard_helper')
-                      | selectattr('attributes.dashboard_lookup_key', 'eq', lookup_key)
-                      | map(attribute='entity_id')
-                      | first
-                      | default('', true) -%}
-
-                  {%- set selected_assignee_name = name -%}
+                  << template_snippets.meta_stamp >>
 
 
-                  {#-- 2. Handle Selection State --#}
+                  {#-- 1. User Configuration --#}
 
-                  {%- if selected_assignee_name in ['None', 'unknown', 'unavailable', ''] -%}
-                    {{
-                      {
-                        'type': 'markdown',
-                        'content': "⚠️ **User Context Missing**\n\nThis per-user admin view could not resolve a user context.\n\n📊 **Expected behavior:**\n- View is tied to one user\n- Dashboard helper resolves automatically\n- User stats and controls appear"
-                      }
-                    }},
-                    {%- set skip_render = true -%}
-                  {%- else -%}
-                    {%- set name = selected_assignee_name -%}
-                    {%- set skip_render = false -%}
-                  {%- endif -%}
+                  << template_snippets.user_override_helper >>
+
+
+                  {#-- 2. Dynamic Lookups & Validations --#}
+
+                  << template_snippets.admin_setup_peruser >>
+
+                  << template_snippets.admin_validation_missing_selector >>
+
+                  << template_snippets.admin_validation_invalid_selection >>
 
                   {%- if not skip_render -%}
 
-                    {#-- 3. Get Dashboard Helper for Selected Assignee --#}
+                    {#-- 3. Get Dashboard Helper for Selected User --#}
+
+                    {%- set selected_user_name = name -%}
 
                     {%- set dashboard_helper = admin_selector_eid
                       | default("err-dashboard_helper_missing", true) -%}
 
-                    {%- if states(dashboard_helper) in ['unknown', 'unavailable'] -%}
-                      {{
-                        {
-                          'type': 'markdown',
-                          'content': "⚠️ **Dashboard Helper Not Found**\n\nCannot find dashboard helper for: **" ~ name ~ "**\n\nThe ChoreOps integration may not have this child\nor the helper sensor is unavailable.\n\n🔧 **Troubleshooting:**\n- Check Settings → Integrations → ChoreOps\n- Verify child name matches exactly\n- Wait a moment and try again"
-                        }
-                      }},
-                      {%- set skip_render = true -%}
-                    {%- endif -%}
+                    << template_snippets.admin_validation_dashboard_helper >>
                   {%- endif -%}
 
 
@@ -348,11 +282,11 @@
                     {%- set points_label = points_attrs.get('unit_of_measurement') | default('Pts') -%}
                     {%- set points_icon = points_attrs.get('icon') -%}
 
-                    {#-- Points Stats from assignee_points --#}
+                    {#-- Points stats from user points sensor --#}
                     {%- set points_earned_week = points_attrs.get('point_stat_points_earned_week', 0) | int(default=0) -%}
                     {%- set points_spent_week = points_attrs.get('point_stat_points_spent_week', 0) | int(default=0) -%}
 
-                    {#-- Chore Stats from assignee_chores_completed_total --#}
+                    {#-- Chore stats from user chores sensor --#}
                     {%- set chores_attrs = states[total_chores_sensor].attributes | default({}, true) if total_chores_sensor else {} -%}
                     {%- set weekly_completed = chores_attrs.get('chore_stat_approved_week', 0) | int(default=0) -%}
                     {%- set chore_longest_streak = chores_attrs.get('chore_stat_longest_streak_week', 0) | int(default=0) -%}
@@ -483,43 +417,30 @@
                 columns: 1
               card_param: cards
               filter:
-                template: >-
+                template: |-
                   {#-- ===== ADMIN ACTIONS CARD ===== --#}
 
-
-                  {#-- 1. Resolve per-user dashboard helper (dynamic lookup) --#}
-
-                  {%- set name = '<< user.name >>' -%}
-                  {%- set user_id = '<< user.user_id >>' -%}
-                  {%- set entry_id = '<< integration.entry_id >>' -%}
-                  {%- set lookup_key = entry_id ~ ':' ~ user_id -%}
-
-                  {%- set admin_selector_eid = integration_entities('choreops')
-                      | select('search', '^sensor\\.')
-                      | list
-                      | expand
-                      | selectattr('attributes.purpose', 'defined')
-                      | selectattr('attributes.purpose', 'eq', 'purpose_dashboard_helper')
-                      | selectattr('attributes.dashboard_lookup_key', 'eq', lookup_key)
-                      | map(attribute='entity_id')
-                      | first
-                      | default('', true) -%}
-
-                  {#-- 2. Validate Admin Selector & Get Assignee Name --#}
-
-                  {%- if admin_selector_eid == '' -%}
-                    {%- set name = '' -%}
-                  {%- else -%}
-                    {%- set selected_assignee_name = name -%}
-                    {%- if selected_assignee_name in ['None', '', 'unknown', 'unavailable'] -%}
-                      {%- set name = '' -%}
-                    {%- else -%}
-                      {%- set name = selected_assignee_name -%}
-                    {%- endif -%}
-                  {%- endif -%}
+                  << template_snippets.meta_stamp >>
 
 
-                  {#-- 3. Initialize Variables --#}
+                  {#-- 1. User Configuration --#}
+
+                  << template_snippets.user_override_helper >>
+
+
+                  {#-- 2. Dynamic Lookups & Validations --#}
+
+                  << template_snippets.admin_setup_peruser >>
+
+                  << template_snippets.admin_validation_missing_selector >>
+
+                  << template_snippets.admin_validation_invalid_selection >>
+
+                  {%- if not skip_render -%}
+
+                    {#-- 3. Initialize Variables --#}
+
+                    {%- set selected_user_name = name -%}
 
                     {%- set dashboard_helper = admin_selector_eid
                       | default("err-dashboard_helper_missing", true) -%}
@@ -544,25 +465,7 @@
                     content=''
                   ) -%}
 
-                  {#-- Validation: Check if name is configured --#}
-                  {%- if name == 'K i d n a m e' | replace(' ', '') or name == '' -%}
-                    {{
-                      {
-                        'type': 'markdown',
-                        'content': "⚠️ **User Context Missing**\n\nThis per-user admin view could not resolve a user context.\n\n🎛️ **Admin Actions:**\n- User is fixed for this view\n- Admin controls appear automatically\n- Manage points and settings"
-                      }
-                    }},
-                    {%- set skip_render = true -%}
-                  {%- elif states(dashboard_helper) in ['unknown', 'unavailable'] -%}
-                    {{
-                      {
-                        'type': 'markdown',
-                        'content': "⚠️ **Dashboard Configuration Error**\n\nCannot find: `" ~ dashboard_helper ~ "`\n\nThe ChoreOps integration may not have a child\nnamed \'" ~ name ~ "\'. Check Settings → Integrations →\nChoreOps to verify the name matches exactly.\n\n📖 [Setup Instructions](https://github.com/ccpk1/choreops-ha-dashboard?tab=readme-ov-file#-how-to-implement-this-dashboard)"
-                      }
-                    }},
-                    {%- set skip_render = true -%}
-                  {%- else -%}
-                    {%- set skip_render = false -%}
+                    << template_snippets.admin_validation_dashboard_helper >>
                   {%- endif -%}
 
                   {%- if not skip_render -%}
@@ -975,75 +878,42 @@
                 template: |-
                   {#-- ===== PLUSES AND MINUSES - POINTS ===== --#}
 
-                  {#-- 1. Resolve per-user dashboard helper (dynamic lookup) --#}
+                  << template_snippets.meta_stamp >>
 
-                  {%- set name = '<< user.name >>' -%}
-                  {%- set user_id = '<< user.user_id >>' -%}
-                  {%- set entry_id = '<< integration.entry_id >>' -%}
-                  {%- set lookup_key = entry_id ~ ':' ~ user_id -%}
+                  {#-- 1. User Configuration --#}
 
-                  {%- set admin_selector_eid = integration_entities('choreops')
-                      | select('search', '^sensor\\.')
-                      | list
-                      | expand
-                      | selectattr('attributes.purpose', 'defined')
-                      | selectattr('attributes.purpose', 'eq', 'purpose_dashboard_helper')
-                      | selectattr('attributes.dashboard_lookup_key', 'eq', lookup_key)
-                      | map(attribute='entity_id')
-                      | first
-                      | default('', true) -%}
+                  << template_snippets.user_override_helper >>
 
-                  {%- if admin_selector_eid == '' -%}
-                    {%- set name = '' -%}
-                  {%- else -%}
-                    {%- set selected_assignee_name = name -%}
-                    {%- if selected_assignee_name in ['None', '', 'unknown', 'unavailable'] -%}
-                      {%- set name = '' -%}
-                    {%- else -%}
-                      {%- set name = selected_assignee_name -%}
-                    {%- endif -%}
-                  {%- endif -%}
 
-                  {#-- *** Section 2: Initialize Variables *** --#}
+                  {#-- 2. Dynamic Lookups & Validations --#}
 
-                    {%- set dashboard_helper = admin_selector_eid
-                      | default("err-dashboard_helper_missing", true) -%}
-                    {%- set gamification_enabled = state_attr(dashboard_helper, 'gamification_enabled') | default(false, true) -%}
+                  << template_snippets.admin_setup_peruser >>
 
-                  {#-- Validation: Check if name is configured --#}
-                  {%- if name == 'K i d n a m e' | replace(' ', '') or name == '' -%}
-                    {{
-                      {
-                        'type': 'markdown',
-                        'content': "⚠️ **User Context Missing**\n\nThis per-user admin view could not resolve a user context.\n\n💰 **Points Management:**\n- User is fixed for this view\n- Point controls appear automatically\n- Award or deduct points"
-                      }
-                    }},
+                  << template_snippets.admin_validation_missing_selector_compact >>
+
+                  << template_snippets.admin_validation_invalid_selection_compact >>
+
+                  {#-- 3. Initialize Variables --#}
+
+                  {%- set dashboard_helper = admin_selector_eid
+                    | default("err-dashboard_helper_missing", true) -%}
+                  {%- set gamification_enabled = state_attr(dashboard_helper, 'gamification_enabled') | default(false, true) -%}
+
+                  {%- if not skip_render and (states(dashboard_helper) in ['unknown', 'unavailable'] or not gamification_enabled) -%}
                     {%- set skip_render = true -%}
-                  {%- elif states(dashboard_helper) in ['unknown', 'unavailable'] -%}
-                    {{
-                      {
-                        'type': 'markdown',
-                        'content': "⚠️ **Dashboard Configuration Error**\n\nCannot find: `" ~ dashboard_helper ~ "`\n\nThe ChoreOps integration may not have a child\nnamed \'" ~ name ~ "\'. Check Settings → Integrations →\nChoreOps to verify the name matches exactly.\n\n📖 [Setup Instructions](https://github.com/ccpk1/choreops-ha-dashboard?tab=readme-ov-file#-how-to-implement-this-dashboard)"
-                      }
-                    }},
-                    {%- set skip_render = true -%}
-                  {%- elif not gamification_enabled -%}
-                    {%- set skip_render = true -%}
-                  {%- else -%}
-                    {%- set skip_render = false -%}
                   {%- endif -%}
 
                   {%- if not skip_render -%}
 
-                    {#-- *** Section 3: Collect Data *** --#}
+                    {#-- 4. Collect Data --#}
                     {%- set core_sensors = state_attr(dashboard_helper, 'core_sensors') or {} -%}
                     {%- set translation_sensor = (state_attr(dashboard_helper, 'dashboard_helpers') or {}).get('translation_sensor_eid') -%}
                     {%- set ui = state_attr(translation_sensor, 'ui_translations') if translation_sensor else {} -%}
 
-                    {#-- *** Section 4: Build Display *** --#}
+                    {#-- 5. Build Display --#}
                     {#-- No intermediate variables needed for inline translations --#}
 
-                    {#-- *** Section 5: Render *** --#}
+                    {#-- 6. Render --#}
                     {{- {
                       'type': 'heading',
                       'icon': 'mdi:plus-circle-multiple',
@@ -1067,54 +937,37 @@
                 columns: 2
               card_param: cards
               filter:
-                template: >-
+                template: |-
                   {#-- ===== PLUSES AND MINUSES - BONUS ===== --#}
 
-                  {#-- 1. Resolve per-user dashboard helper (dynamic lookup) --#}
+                  << template_snippets.meta_stamp >>
 
-                  {%- set name = '<< user.name >>' -%}
-                  {%- set user_id = '<< user.user_id >>' -%}
-                  {%- set entry_id = '<< integration.entry_id >>' -%}
-                  {%- set lookup_key = entry_id ~ ':' ~ user_id -%}
+                  {#-- 1. User Configuration --#}
 
-                  {%- set admin_selector_eid = integration_entities('choreops')
-                      | select('search', '^sensor\\.')
-                      | list
-                      | expand
-                      | selectattr('attributes.purpose', 'defined')
-                      | selectattr('attributes.purpose', 'eq', 'purpose_dashboard_helper')
-                      | selectattr('attributes.dashboard_lookup_key', 'eq', lookup_key)
-                      | map(attribute='entity_id')
-                      | first
-                      | default('', true) -%}
+                  << template_snippets.user_override_helper >>
 
-                  {%- if admin_selector_eid == '' -%}
-                    {%- set name = '' -%}
-                  {%- else -%}
-                    {%- set selected_assignee_name = name -%}
-                    {%- if selected_assignee_name in ['None', '', 'unknown', 'unavailable'] -%}
-                      {%- set name = '' -%}
-                    {%- else -%}
-                      {%- set name = selected_assignee_name -%}
-                    {%- endif -%}
-                  {%- endif -%}
 
-                  {#-- *** Section 2: Initialize Variables *** --#}
+                  {#-- 2. Dynamic Lookups & Validations --#}
 
-                    {%- set dashboard_helper = admin_selector_eid
-                      | default("err-dashboard_helper_missing", true) -%}
-                    {%- set gamification_enabled = state_attr(dashboard_helper, 'gamification_enabled') | default(false, true) -%}
+                  << template_snippets.admin_setup_peruser >>
 
-                  {#-- Validation: Check if name is configured --#}
-                  {%- if name == 'K i d n a m e' | replace(' ', '') or name == '' or states(dashboard_helper) in ['unknown', 'unavailable'] or not gamification_enabled -%}
+                  << template_snippets.admin_validation_missing_selector_compact >>
+
+                  << template_snippets.admin_validation_invalid_selection_compact >>
+
+                  {#-- 3. Initialize Variables --#}
+
+                  {%- set dashboard_helper = admin_selector_eid
+                    | default("err-dashboard_helper_missing", true) -%}
+                  {%- set gamification_enabled = state_attr(dashboard_helper, 'gamification_enabled') | default(false, true) -%}
+
+                  {%- if not skip_render and (states(dashboard_helper) in ['unknown', 'unavailable'] or not gamification_enabled) -%}
                     {%- set skip_render = true -%}
-                  {%- else -%}
-                    {%- set skip_render = false -%}
                   {%- endif -%}
 
                   {%- if not skip_render -%}
 
-                    {#-- *** Section 3: Collect Data *** --#}
+                    {#-- 4. Collect Data --#}
                     {%- set ns = namespace( points_sensor='', points_label='' ) -%}
                     {%- set core_sensors = state_attr(dashboard_helper, 'core_sensors') or {} -%}
                     {%- set translation_sensor = (state_attr(dashboard_helper, 'dashboard_helpers') or {}).get('translation_sensor_eid') -%}
@@ -1123,10 +976,10 @@
                     {%- set ns.points_label = (state_attr(ns.points_sensor, 'unit_of_measurement') if ns.points_sensor else None) or 'Points' -%}
                     {%- set bonus_list = state_attr(dashboard_helper, 'bonuses') | default([], true) -%}
 
-                    {#-- *** Section 4: Build Display *** --#}
+                    {#-- 5. Build Display --#}
                     {#-- No intermediate variables needed, inline translations directly --#}
 
-                    {#-- *** Section 5: Render *** --#}
+                    {#-- 6. Render --#}
                     {%- for bonus in bonus_list -%}
                     {%- set bonus_name = (bonus.name | default('Unknown Bonus')) if bonus is mapping else 'Unknown Bonus' -%}
                     {%- set bonus_button_eid = (bonus.eid | default('')) if bonus is mapping else '' -%}
@@ -1169,62 +1022,45 @@
                 columns: 6
               card_param: cards
               filter:
-                template: >-
+                template: |-
                   {#-- ===== PLUSES AND MINUSES - POINTS BUTTONS ===== --#}
 
-                  {#-- 1. Resolve per-user dashboard helper (dynamic lookup) --#}
+                  << template_snippets.meta_stamp >>
 
-                  {%- set name = '<< user.name >>' -%}
-                  {%- set user_id = '<< user.user_id >>' -%}
-                  {%- set entry_id = '<< integration.entry_id >>' -%}
-                  {%- set lookup_key = entry_id ~ ':' ~ user_id -%}
+                  {#-- 1. User Configuration --#}
 
-                  {%- set admin_selector_eid = integration_entities('choreops')
-                      | select('search', '^sensor\\.')
-                      | list
-                      | expand
-                      | selectattr('attributes.purpose', 'defined')
-                      | selectattr('attributes.purpose', 'eq', 'purpose_dashboard_helper')
-                      | selectattr('attributes.dashboard_lookup_key', 'eq', lookup_key)
-                      | map(attribute='entity_id')
-                      | first
-                      | default('', true) -%}
+                  << template_snippets.user_override_helper >>
 
-                  {%- if admin_selector_eid == '' -%}
-                    {%- set name = '' -%}
-                  {%- else -%}
-                    {%- set selected_assignee_name = name -%}
-                    {%- if selected_assignee_name in ['None', '', 'unknown', 'unavailable'] -%}
-                      {%- set name = '' -%}
-                    {%- else -%}
-                      {%- set name = selected_assignee_name -%}
-                    {%- endif -%}
-                  {%- endif -%}
 
-                  {#-- *** Section 2: Initialize Variables *** --#}
+                  {#-- 2. Dynamic Lookups & Validations --#}
 
-                    {%- set dashboard_helper = admin_selector_eid
-                      | default("err-dashboard_helper_missing", true) -%}
-                    {%- set gamification_enabled = state_attr(dashboard_helper, 'gamification_enabled') | default(false, true) -%}
+                  << template_snippets.admin_setup_peruser >>
 
-                  {#-- Validation: Check if name is configured --#}
-                  {%- if name == 'K i d n a m e' | replace(' ', '') or name == '' or states(dashboard_helper) in ['unknown', 'unavailable'] or not gamification_enabled -%}
+                  << template_snippets.admin_validation_missing_selector_compact >>
+
+                  << template_snippets.admin_validation_invalid_selection_compact >>
+
+                  {#-- 3. Initialize Variables --#}
+
+                  {%- set dashboard_helper = admin_selector_eid
+                    | default("err-dashboard_helper_missing", true) -%}
+                  {%- set gamification_enabled = state_attr(dashboard_helper, 'gamification_enabled') | default(false, true) -%}
+
+                  {%- if not skip_render and (states(dashboard_helper) in ['unknown', 'unavailable'] or not gamification_enabled) -%}
                     {%- set skip_render = true -%}
-                  {%- else -%}
-                    {%- set skip_render = false -%}
                   {%- endif -%}
 
                   {%- if not skip_render -%}
 
-                    {#-- *** Section 3: Collect Data *** --#}
+                    {#-- 4. Collect Data --#}
                     {%- set translation_sensor = (state_attr(dashboard_helper, 'dashboard_helpers') or {}).get('translation_sensor_eid') -%}
                     {%- set ui = state_attr(translation_sensor, 'ui_translations') if translation_sensor else {} -%}
                     {%- set point_buttons = state_attr(dashboard_helper, 'points_buttons') | default([], true) -%}
 
-                    {#-- *** Section 4: Build Display *** --#}
+                    {#-- 5. Build Display --#}
                     {#-- No intermediate variables needed, render directly --#}
 
-                    {#-- *** Section 5: Render *** --#}
+                    {#-- 6. Render --#}
                     {%- for button_data in point_buttons -%}
                       {%- set button_eid = button_data.eid if button_data is mapping else button_data -%}
                       {%- set button_name = button_data.name if button_data is mapping else '' -%}
@@ -1260,54 +1096,37 @@
                 columns: 2
               card_param: cards
               filter:
-                template: >-
+                template: |-
                   {#-- ===== PLUSES AND MINUSES - PENALTY ===== --#}
 
-                  {#-- 1. Resolve per-user dashboard helper (dynamic lookup) --#}
+                  << template_snippets.meta_stamp >>
 
-                  {%- set name = '<< user.name >>' -%}
-                  {%- set user_id = '<< user.user_id >>' -%}
-                  {%- set entry_id = '<< integration.entry_id >>' -%}
-                  {%- set lookup_key = entry_id ~ ':' ~ user_id -%}
+                  {#-- 1. User Configuration --#}
 
-                  {%- set admin_selector_eid = integration_entities('choreops')
-                      | select('search', '^sensor\\.')
-                      | list
-                      | expand
-                      | selectattr('attributes.purpose', 'defined')
-                      | selectattr('attributes.purpose', 'eq', 'purpose_dashboard_helper')
-                      | selectattr('attributes.dashboard_lookup_key', 'eq', lookup_key)
-                      | map(attribute='entity_id')
-                      | first
-                      | default('', true) -%}
+                  << template_snippets.user_override_helper >>
 
-                  {%- if admin_selector_eid == '' -%}
-                    {%- set name = '' -%}
-                  {%- else -%}
-                    {%- set selected_assignee_name = name -%}
-                    {%- if selected_assignee_name in ['None', '', 'unknown', 'unavailable'] -%}
-                      {%- set name = '' -%}
-                    {%- else -%}
-                      {%- set name = selected_assignee_name -%}
-                    {%- endif -%}
-                  {%- endif -%}
 
-                  {#-- *** Section 2: Initialize Variables *** --#}
+                  {#-- 2. Dynamic Lookups & Validations --#}
 
-                    {%- set dashboard_helper = admin_selector_eid
-                      | default("err-dashboard_helper_missing", true) -%}
-                    {%- set gamification_enabled = state_attr(dashboard_helper, 'gamification_enabled') | default(false, true) -%}
+                  << template_snippets.admin_setup_peruser >>
 
-                  {#-- Validation: Check if name is configured --#}
-                  {%- if name == 'K i d n a m e' | replace(' ', '') or name == '' or states(dashboard_helper) in ['unknown', 'unavailable'] or not gamification_enabled -%}
+                  << template_snippets.admin_validation_missing_selector_compact >>
+
+                  << template_snippets.admin_validation_invalid_selection_compact >>
+
+                  {#-- 3. Initialize Variables --#}
+
+                  {%- set dashboard_helper = admin_selector_eid
+                    | default("err-dashboard_helper_missing", true) -%}
+                  {%- set gamification_enabled = state_attr(dashboard_helper, 'gamification_enabled') | default(false, true) -%}
+
+                  {%- if not skip_render and (states(dashboard_helper) in ['unknown', 'unavailable'] or not gamification_enabled) -%}
                     {%- set skip_render = true -%}
-                  {%- else -%}
-                    {%- set skip_render = false -%}
                   {%- endif -%}
 
-                  {% if not skip_render %}
+                  {%- if not skip_render -%}
 
-                    {#-- *** Section 3: Collect Data *** --#}
+                    {#-- 4. Collect Data --#}
                     {%- set ns = namespace(points_sensor='', points_label='') -%}
                     {%- set core_sensors = state_attr(dashboard_helper, 'core_sensors') or {} -%}
                     {%- set translation_sensor = (state_attr(dashboard_helper, 'dashboard_helpers') or {}).get('translation_sensor_eid') -%}
@@ -1317,10 +1136,10 @@
                     {%- set penalty_list = state_attr(dashboard_helper, 'penalties') | default([], true) -%}
 
 
-                    {#-- *** Section 4: Build Display *** --#}
+                    {#-- 5. Build Display --#}
                     {#-- No intermediate variables needed, inline translations directly --#}
 
-                    {#-- *** Section 5: Render *** --#}
+                    {#-- 6. Render --#}
                     {%- for penalty in penalty_list -%}
                     {%- set penalty_name = (penalty.name | default('Unknown Penalty')) if penalty is mapping else 'Unknown Penalty' -%}
                     {%- set penalty_button_eid = (penalty.eid | default('')) if penalty is mapping else '' -%}
@@ -1372,64 +1191,34 @@
                 template: |-
                   {#-- ===== 7 DAY ACTIVITY LOG ===== --#}
 
-                  {#-- 1. Resolve per-user dashboard helper (dynamic lookup) --#}
+                  << template_snippets.meta_stamp >>
 
-                  {%- set name = '<< user.name >>' -%}
-                  {%- set user_id = '<< user.user_id >>' -%}
-                  {%- set entry_id = '<< integration.entry_id >>' -%}
-                  {%- set lookup_key = entry_id ~ ':' ~ user_id -%}
+                  {#-- 1. User Configuration --#}
 
-                  {%- set admin_selector_eid = integration_entities('choreops')
-                      | select('search', '^sensor\\.')
-                      | list
-                      | expand
-                      | selectattr('attributes.purpose', 'defined')
-                      | selectattr('attributes.purpose', 'eq', 'purpose_dashboard_helper')
-                      | selectattr('attributes.dashboard_lookup_key', 'eq', lookup_key)
-                      | map(attribute='entity_id')
-                      | first
-                      | default('', true) -%}
+                  << template_snippets.user_override_helper >>
 
-                  {%- if admin_selector_eid == '' -%}
-                    {%- set name = '' -%}
-                  {%- else -%}
-                    {%- set selected_assignee_name = name -%}
-                    {%- if selected_assignee_name in ['None', '', 'unknown', 'unavailable'] -%}
-                      {%- set name = '' -%}
-                    {%- else -%}
-                      {%- set name = selected_assignee_name -%}
-                    {%- endif -%}
-                  {%- endif -%}
 
-                  {#-- *** Section 2: Initialize Variables *** --#}
+                  {#-- 2. Dynamic Lookups & Validations --#}
+
+                  << template_snippets.admin_setup_peruser >>
+
+                  << template_snippets.admin_validation_missing_selector >>
+
+                  << template_snippets.admin_validation_invalid_selection >>
+
+                  {%- if not skip_render -%}
+
+                    {#-- 3. Initialize Variables --#}
 
                     {%- set dashboard_helper = admin_selector_eid
                       | default("err-dashboard_helper_missing", true) -%}
 
-                  {#-- Validation: Check if name is configured --#}
-                  {%- if name == 'K i d n a m e' | replace(' ', '') or name == '' -%}
-                    {{
-                      {
-                        'type': 'markdown',
-                        'content': "⚠️ **User Context Missing**\n\nThis per-user admin view could not resolve a user context.\n\n📊 **Activity Log:**\n- User is fixed for this view\n- 7-day history appears automatically\n- Track all recent actions"
-                      }
-                    }},
-                    {%- set skip_render = true -%}
-                  {%- elif states(dashboard_helper) in ['unknown', 'unavailable'] -%}
-                    {{
-                      {
-                        'type': 'markdown',
-                        'content': "⚠️ **Dashboard Configuration Error**\n\nCannot find: `" ~ dashboard_helper ~ "`\n\nThe ChoreOps integration may not have a child\nnamed \'" ~ name ~ "\'. Check Settings → Integrations →\nChoreOps to verify the name matches exactly.\n\n📖 [Setup Instructions](https://github.com/ccpk1/choreops-ha-dashboard?tab=readme-ov-file#-how-to-implement-this-dashboard)"
-                      }
-                    }},
-                    {%- set skip_render = true -%}
-                  {%- else -%}
-                    {%- set skip_render = false -%}
+                    << template_snippets.admin_validation_dashboard_helper >>
                   {%- endif -%}
 
                   {%- if not skip_render -%}
 
-                    {#-- *** Section 3: Collect Data *** --#}
+                    {#-- 4. Collect Data --#}
                     {%- set translation_sensor = (state_attr(dashboard_helper, 'dashboard_helpers') or {}).get('translation_sensor_eid') -%}
                     {%- set ui = state_attr(translation_sensor, 'ui_translations') if translation_sensor else {} -%}
                     {%- set entity_list = device_entities(device_id(dashboard_helper))
@@ -1440,10 +1229,10 @@
                       | reject('search', 'chores_completed_')
                       | sort -%}
 
-                    {#-- *** Section 4: Build Display *** --#}
+                    {#-- 5. Build Display --#}
                     {#-- No intermediate variables needed --#}
 
-                    {#-- *** Section 5: Render *** --#}
+                    {#-- 6. Render --#}
                     {{- {
                       'type': 'heading',
                       'icon': 'mdi:clipboard-text',

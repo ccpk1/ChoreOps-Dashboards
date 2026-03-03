@@ -4,9 +4,16 @@
 <#-- ============================================= --#>
 <#--                                             --#>
 <#-- Admin dashboard: System management         --#>
-<#-- Uses SystemDashboardAdminAssigneeSelect entity  --#>
+<#-- Uses SystemDashboardAdminUserSelect entity      --#>
 <#--                                             --#>
 <#-- Uses integration.entry_id injection for instance-safe selector lookup --#>
+<#--                                             --#>
+<#-- Snippet tokens: template_snippets.admin_setup_shared,               --#>
+<#-- template_snippets.admin_validation_missing_selector,                --#>
+<#-- template_snippets.admin_validation_invalid_selection,               --#>
+<#-- template_snippets.user_override_helper, template_snippets.meta_stamp --#>
+<#-- Stamp format (canonical): META STAMP: {template_id} • {release} • {generated_at} --#>
+<#-- Stamp placement: first line inside each card template block after card header comment --#>
 <#--                                             --#>
 <#-- All HA Jinja2 {{ }} syntax preserved       --#>
 <#-- ============================================= --#>
@@ -26,25 +33,18 @@
             template: >-
               {#-- ===== ADMIN HEADER ===== --#}
 
-              {#-- 1. Find Admin Assignee Selector (dynamic lookup) --#}
+              << template_snippets.meta_stamp >>
 
-                {%- set entry_id = '<< integration.entry_id >>' -%}
+              {#-- 1. Find Admin User Selector (dynamic lookup) --#}
 
-              {%- set admin_selector_eid = integration_entities('choreops')
-                  | select('match', '^select\\.')
-                  | list
-                  | expand
-                  | selectattr('attributes.purpose', 'defined')
-                  | selectattr('attributes.purpose', 'eq', 'purpose_system_dashboard_admin_user')
-                  | selectattr('attributes.integration_entry_id', 'eq', entry_id)
-                  | map(attribute='entity_id')
-                  | first
-                  | default('', true) -%}
+              << template_snippets.user_override_helper >>
+
+              << template_snippets.admin_setup_shared >>
 
               {{
                 {
                   'type': 'markdown',
-                  'content': '# ChoreOps System Administration\n\n**Select a child to manage their chores, rewards, and activity.**'
+                  'content': '# ChoreOps System Administration\n\n**Select a user to manage chores, rewards, and activity.**'
                 }
               }},
 
@@ -54,7 +54,7 @@
                     'type': 'custom:mushroom-template-card',
                     'entity': admin_selector_eid,
                     'primary': 'Manage: ' ~ states(admin_selector_eid),
-                    'secondary': state_attr(admin_selector_eid, 'dashboard_helper_eid') | default('Select a child'),
+                    'secondary': state_attr(admin_selector_eid, 'dashboard_helper_eid') | default('Select a user'),
                     'icon': 'mdi:account-child',
                     'icon_color': 'blue',
                     'tap_action': {'action': 'more-info'}
@@ -72,24 +72,16 @@
                 columns: 1
               card_param: cards
               filter:
-                template: >-
+                template: |-
                   {#-- ===== APPROVAL ACTIONS CARD ===== --#}
 
 
-                  {#-- 1. Find Admin Assignee Selector (dynamic lookup) --#}
+                  << template_snippets.meta_stamp >>
 
-                    {%- set entry_id = '<< integration.entry_id >>' -%}
 
-                  {%- set admin_selector_eid = integration_entities('choreops')
-                      | select('match', '^select\\.')
-                      | list
-                      | expand
-                      | selectattr('attributes.purpose', 'defined')
-                      | selectattr('attributes.purpose', 'eq', 'purpose_system_dashboard_admin_user')
-                      | selectattr('attributes.integration_entry_id', 'eq', entry_id)
-                      | map(attribute='entity_id')
-                      | first
-                      | default('', true) -%}
+                  {#-- 1. User Configuration --#}
+
+                  << template_snippets.user_override_helper >>
 
                   {%- set pref_column_count = 2 -%}
 
@@ -98,56 +90,32 @@
                   {%- set pref_column_count = pref_column_count | int(default=2) -%}
 
 
-                  {#-- 2. Validate Admin Selector Exists --#}
+                  {#-- 2. Dynamic Lookups & Validations --#}
 
-                  {%- if admin_selector_eid == '' -%}
-                    {{
-                      {
-                        'type': 'markdown',
-                        'content': "⚠️ **Admin Selector Not Found**\n\nThe admin assignee selector entity could not be found.\n\nThe integration may need to be restarted or reloaded.\nCheck Settings → Integrations → ChoreOps."
-                      }
-                    }},
-                    {%- set skip_render = true -%}
-                  {%- else -%}
-                    {%- set selected_assignee_name = states(admin_selector_eid) -%}
+                  << template_snippets.admin_setup_shared >>
 
-                    {#-- 3. Validate Assignee Selected --#}
-                    {%- if selected_assignee_name in ['None', '', 'unknown', 'unavailable'] -%}
-                      {{
-                        {
-                          'type': 'markdown',
-                          'content': "ℹ️ **No Assignee Selected**\n\nSelect a assignee from the dropdown above to view pending approvals."
-                        }
-                      }},
-                      {%- set skip_render = true -%}
-                    {%- else -%}
-                      {%- set name = selected_assignee_name -%}
 
-                      {#-- 4. Initialize Variables --#}
+                  << template_snippets.admin_validation_missing_selector >>
 
-                        {%- set dashboard_helper = state_attr(admin_selector_eid, 'dashboard_helper_eid')
-                          | default("err-dashboard_helper_missing", true) -%}
+                  << template_snippets.admin_validation_invalid_selection >>
 
-                      {%- set ns = namespace(
-                        approve_chore_buttons=[],
-                        approve_reward_buttons=[],
-                        group_cards=[],
-                        has_approvals='false'
-                      ) -%}
+                  {%- if not skip_render -%}
 
-                      {#-- 5. Validate Dashboard Helper --#}
-                      {%- if states(dashboard_helper) in ['unknown', 'unavailable'] -%}
-                        {{
-                          {
-                            'type': 'markdown',
-                            'content': "⚠️ **Dashboard Configuration Error**\n\nCannot find dashboard helper for: `" ~ name ~ "`\n\nThe integration may not have initialized properly.\nCheck Settings → Integrations → ChoreOps."
-                          }
-                        }},
-                        {%- set skip_render = true -%}
-                      {%- else -%}
-                        {%- set skip_render = false -%}
-                      {%- endif -%}
-                    {%- endif -%}
+                    {#-- 3. Initialize Variables --#}
+
+                    {%- set selected_user_name = states(admin_selector_eid) -%}
+                    {%- set name = selected_user_name -%}
+                    {%- set dashboard_helper = state_attr(admin_selector_eid, 'dashboard_helper_eid')
+                      | default("err-dashboard_helper_missing", true) -%}
+
+                    {%- set ns = namespace(
+                      approve_chore_buttons=[],
+                      approve_reward_buttons=[],
+                      group_cards=[],
+                      has_approvals='false'
+                    ) -%}
+
+                    << template_snippets.admin_validation_dashboard_helper >>
                   {%- endif -%}
 
                   {%- if not skip_render -%}
@@ -268,59 +236,36 @@
                 columns: 1
               card_param: cards
               filter:
-                template: >-
+                template: |-
                   {#-- ===== PARENT DASHBOARD ===== --#}
 
 
-                  {#-- 1. Find Admin Assignee Selector (dynamic lookup) --#}
-
-                    {%- set entry_id = '<< integration.entry_id >>' -%}
-
-                  {%- set admin_selector_eid = integration_entities('choreops')
-                      | select('match', '^select\\.')
-                      | list
-                      | expand
-                      | selectattr('attributes.purpose', 'defined')
-                      | selectattr('attributes.purpose', 'eq', 'purpose_system_dashboard_admin_user')
-                      | selectattr('attributes.integration_entry_id', 'eq', entry_id)
-                      | map(attribute='entity_id')
-                      | first
-                      | default('', true) -%}
-
-                  {%- set selected_assignee_name = states(admin_selector_eid) -%}
+                  << template_snippets.meta_stamp >>
 
 
-                  {#-- 2. Handle Selection State --#}
+                  {#-- 1. User Configuration --#}
 
-                  {%- if selected_assignee_name in ['None', 'unknown', 'unavailable', ''] -%}
-                    {{
-                      {
-                        'type': 'markdown',
-                        'content': "⚠️ **Select a Assignee First**\n\nUse the **Assignee Selector** above to choose\nwhich child's dashboard to display.\n\n📊 **Available Options:**\n- Select from dropdown\n- Dashboard will load automatically\n- All stats and controls will appear"
-                      }
-                    }},
-                    {%- set skip_render = true -%}
-                  {%- else -%}
-                    {%- set name = selected_assignee_name -%}
-                    {%- set skip_render = false -%}
-                  {%- endif -%}
+                  << template_snippets.user_override_helper >>
+
+
+                  {#-- 2. Dynamic Lookups & Validations --#}
+
+                  << template_snippets.admin_setup_shared >>
+
+                  << template_snippets.admin_validation_missing_selector >>
+
+                  << template_snippets.admin_validation_invalid_selection >>
 
                   {%- if not skip_render -%}
 
-                    {#-- 3. Get Dashboard Helper for Selected Assignee --#}
+                    {#-- 3. Get Dashboard Helper for Selected User --#}
 
+                    {%- set selected_user_name = states(admin_selector_eid) -%}
+                    {%- set name = selected_user_name -%}
                     {%- set dashboard_helper = state_attr(admin_selector_eid, 'dashboard_helper_eid')
                       | default("err-dashboard_helper_missing", true) -%}
 
-                    {%- if states(dashboard_helper) in ['unknown', 'unavailable'] -%}
-                      {{
-                        {
-                          'type': 'markdown',
-                          'content': "⚠️ **Dashboard Helper Not Found**\n\nCannot find dashboard helper for: **" ~ name ~ "**\n\nThe ChoreOps integration may not have this child\nor the helper sensor is unavailable.\n\n🔧 **Troubleshooting:**\n- Check Settings → Integrations → ChoreOps\n- Verify child name matches exactly\n- Wait a moment and try again"
-                        }
-                      }},
-                      {%- set skip_render = true -%}
-                    {%- endif -%}
+                    << template_snippets.admin_validation_dashboard_helper >>
                   {%- endif -%}
 
 
@@ -339,11 +284,11 @@
                     {%- set points_label = points_attrs.get('unit_of_measurement') | default('Pts') -%}
                     {%- set points_icon = points_attrs.get('icon') -%}
 
-                    {#-- Points Stats from assignee_points --#}
+                    {#-- Points stats from user points sensor --#}
                     {%- set points_earned_week = points_attrs.get('point_stat_points_earned_week', 0) | int(default=0) -%}
                     {%- set points_spent_week = points_attrs.get('point_stat_points_spent_week', 0) | int(default=0) -%}
 
-                    {#-- Chore Stats from assignee_chores_completed_total --#}
+                    {#-- Chore stats from user chores sensor --#}
                     {%- set chores_attrs = states[total_chores_sensor].attributes | default({}, true) if total_chores_sensor else {} -%}
                     {%- set weekly_completed = chores_attrs.get('chore_stat_approved_week', 0) | int(default=0) -%}
                     {%- set chore_longest_streak = chores_attrs.get('chore_stat_longest_streak_week', 0) | int(default=0) -%}
@@ -474,41 +419,32 @@
                 columns: 1
               card_param: cards
               filter:
-                template: >-
+                template: |-
                   {#-- ===== ADMIN ACTIONS CARD ===== --#}
 
 
-                  {#-- 1. Find Admin Assignee Selector (dynamic lookup) --#}
-
-                    {%- set entry_id = '<< integration.entry_id >>' -%}
-
-                  {%- set admin_selector_eid = integration_entities('choreops')
-                      | select('match', '^select\\.')
-                      | list
-                      | expand
-                      | selectattr('attributes.purpose', 'defined')
-                      | selectattr('attributes.purpose', 'eq', 'purpose_system_dashboard_admin_user')
-                      | selectattr('attributes.integration_entry_id', 'eq', entry_id)
-                      | map(attribute='entity_id')
-                      | first
-                      | default('', true) -%}
-
-                  {#-- 2. Validate Admin Selector & Get Assignee Name --#}
-
-                  {%- if admin_selector_eid == '' -%}
-                    {%- set name = '' -%}
-                  {%- else -%}
-                    {%- set selected_assignee_name = states(admin_selector_eid) -%}
-                    {%- if selected_assignee_name in ['None', '', 'unknown', 'unavailable'] -%}
-                      {%- set name = '' -%}
-                    {%- else -%}
-                      {%- set name = selected_assignee_name -%}
-                    {%- endif -%}
-                  {%- endif -%}
+                  << template_snippets.meta_stamp >>
 
 
-                  {#-- 3. Initialize Variables --#}
+                  {#-- 1. User Configuration --#}
 
+                  << template_snippets.user_override_helper >>
+
+
+                  {#-- 2. Dynamic Lookups & Validations --#}
+
+                  << template_snippets.admin_setup_shared >>
+
+                  << template_snippets.admin_validation_missing_selector >>
+
+                  << template_snippets.admin_validation_invalid_selection >>
+
+                  {%- if not skip_render -%}
+
+                    {#-- 3. Initialize Variables --#}
+
+                    {%- set selected_user_name = states(admin_selector_eid) -%}
+                    {%- set name = selected_user_name -%}
                     {%- set dashboard_helper = state_attr(admin_selector_eid, 'dashboard_helper_eid')
                       | default("err-dashboard_helper_missing", true) -%}
 
@@ -532,25 +468,7 @@
                     content=''
                   ) -%}
 
-                  {#-- Validation: Check if name is configured --#}
-                  {%- if name == 'K i d n a m e' | replace(' ', '') or name == '' -%}
-                    {{
-                      {
-                        'type': 'markdown',
-                        'content': "⚠️ **Select a Assignee First**\n\nUse the **Assignee Selector** above to choose\nwhich child to manage.\n\n🎛️ **Admin Actions:**\n- Select from dropdown\n- Admin controls will appear\n- Manage points and settings"
-                      }
-                    }},
-                    {%- set skip_render = true -%}
-                  {%- elif states(dashboard_helper) in ['unknown', 'unavailable'] -%}
-                    {{
-                      {
-                        'type': 'markdown',
-                        'content': "⚠️ **Dashboard Configuration Error**\n\nCannot find: `" ~ dashboard_helper ~ "`\n\nThe ChoreOps integration may not have a child\nnamed \'" ~ name ~ "\'. Check Settings → Integrations →\nChoreOps to verify the name matches exactly.\n\n📖 [Setup Instructions](https://github.com/ccpk1/choreops-ha-dashboard?tab=readme-ov-file#-how-to-implement-this-dashboard)"
-                      }
-                    }},
-                    {%- set skip_render = true -%}
-                  {%- else -%}
-                    {%- set skip_render = false -%}
+                    << template_snippets.admin_validation_dashboard_helper >>
                   {%- endif -%}
 
                   {%- if not skip_render -%}
@@ -963,7 +881,7 @@
                 template: |-
                   {#-- ===== PLUSES AND MINUSES - POINTS ===== --#}
 
-                  {#-- 1. Find Admin Assignee Selector (dynamic lookup) --#}
+                  {#-- 1. Find Admin User Selector (dynamic lookup) --#}
 
                     {%- set entry_id = '<< integration.entry_id >>' -%}
 
@@ -981,11 +899,11 @@
                   {%- if admin_selector_eid == '' -%}
                     {%- set name = '' -%}
                   {%- else -%}
-                    {%- set selected_assignee_name = states(admin_selector_eid) -%}
-                    {%- if selected_assignee_name in ['None', '', 'unknown', 'unavailable'] -%}
+                    {%- set selected_user_name = states(admin_selector_eid) -%}
+                    {%- if selected_user_name in ['None', '', 'unknown', 'unavailable'] -%}
                       {%- set name = '' -%}
                     {%- else -%}
-                      {%- set name = selected_assignee_name -%}
+                      {%- set name = selected_user_name -%}
                     {%- endif -%}
                   {%- endif -%}
 
@@ -1000,7 +918,7 @@
                     {{
                       {
                         'type': 'markdown',
-                        'content': "⚠️ **Select a Assignee First**\n\nUse the **Assignee Selector** above to choose\nwhich child to manage.\n\n💰 **Points Management:**\n- Select from dropdown\n- Point controls will appear\n- Award or deduct points"
+                        'content': "⚠️ **Select a user first**\n\nUse the **User selector** above to choose\nwhich user to manage.\n\n💰 **Points management:**\n- Select from dropdown\n- Point controls will appear\n- Award or deduct points"
                       }
                     }},
                     {%- set skip_render = true -%}
@@ -1008,7 +926,7 @@
                     {{
                       {
                         'type': 'markdown',
-                        'content': "⚠️ **Dashboard Configuration Error**\n\nCannot find: `" ~ dashboard_helper ~ "`\n\nThe ChoreOps integration may not have a child\nnamed \'" ~ name ~ "\'. Check Settings → Integrations →\nChoreOps to verify the name matches exactly.\n\n📖 [Setup Instructions](https://github.com/ccpk1/choreops-ha-dashboard?tab=readme-ov-file#-how-to-implement-this-dashboard)"
+                        'content': "⚠️ **Dashboard Configuration Error**\n\nCannot find: `" ~ dashboard_helper ~ "`\n\nThe ChoreOps integration may not have a user\nnamed \'" ~ name ~ "\'. Check Settings → Integrations →\nChoreOps to verify the name matches exactly.\n\n📖 [Setup Instructions](https://github.com/ccpk1/choreops-ha-dashboard?tab=readme-ov-file#-how-to-implement-this-dashboard)"
                       }
                     }},
                     {%- set skip_render = true -%}
@@ -1055,7 +973,7 @@
                 template: >-
                   {#-- ===== PLUSES AND MINUSES - BONUS ===== --#}
 
-                  {#-- 1. Find Admin Assignee Selector (dynamic lookup) --#}
+                  {#-- 1. Find Admin User Selector (dynamic lookup) --#}
 
                     {%- set entry_id = '<< integration.entry_id >>' -%}
 
@@ -1073,11 +991,11 @@
                   {%- if admin_selector_eid == '' -%}
                     {%- set name = '' -%}
                   {%- else -%}
-                    {%- set selected_assignee_name = states(admin_selector_eid) -%}
-                    {%- if selected_assignee_name in ['None', '', 'unknown', 'unavailable'] -%}
+                    {%- set selected_user_name = states(admin_selector_eid) -%}
+                    {%- if selected_user_name in ['None', '', 'unknown', 'unavailable'] -%}
                       {%- set name = '' -%}
                     {%- else -%}
-                      {%- set name = selected_assignee_name -%}
+                      {%- set name = selected_user_name -%}
                     {%- endif -%}
                   {%- endif -%}
 
@@ -1154,7 +1072,7 @@
                 template: >-
                   {#-- ===== PLUSES AND MINUSES - POINTS BUTTONS ===== --#}
 
-                  {#-- 1. Find Admin Assignee Selector (dynamic lookup) --#}
+                  {#-- 1. Find Admin User Selector (dynamic lookup) --#}
 
                     {%- set entry_id = '<< integration.entry_id >>' -%}
 
@@ -1172,11 +1090,11 @@
                   {%- if admin_selector_eid == '' -%}
                     {%- set name = '' -%}
                   {%- else -%}
-                    {%- set selected_assignee_name = states(admin_selector_eid) -%}
-                    {%- if selected_assignee_name in ['None', '', 'unknown', 'unavailable'] -%}
+                    {%- set selected_user_name = states(admin_selector_eid) -%}
+                    {%- if selected_user_name in ['None', '', 'unknown', 'unavailable'] -%}
                       {%- set name = '' -%}
                     {%- else -%}
-                      {%- set name = selected_assignee_name -%}
+                      {%- set name = selected_user_name -%}
                     {%- endif -%}
                   {%- endif -%}
 
@@ -1242,7 +1160,7 @@
                 template: >-
                   {#-- ===== PLUSES AND MINUSES - PENALTY ===== --#}
 
-                  {#-- 1. Find Admin Assignee Selector (dynamic lookup) --#}
+                  {#-- 1. Find Admin User Selector (dynamic lookup) --#}
 
                     {%- set entry_id = '<< integration.entry_id >>' -%}
 
@@ -1260,11 +1178,11 @@
                   {%- if admin_selector_eid == '' -%}
                     {%- set name = '' -%}
                   {%- else -%}
-                    {%- set selected_assignee_name = states(admin_selector_eid) -%}
-                    {%- if selected_assignee_name in ['None', '', 'unknown', 'unavailable'] -%}
+                    {%- set selected_user_name = states(admin_selector_eid) -%}
+                    {%- if selected_user_name in ['None', '', 'unknown', 'unavailable'] -%}
                       {%- set name = '' -%}
                     {%- else -%}
-                      {%- set name = selected_assignee_name -%}
+                      {%- set name = selected_user_name -%}
                     {%- endif -%}
                   {%- endif -%}
 
@@ -1348,7 +1266,7 @@
                 template: |-
                   {#-- ===== 7 DAY ACTIVITY LOG ===== --#}
 
-                  {#-- 1. Find Admin Assignee Selector (dynamic lookup) --#}
+                  {#-- 1. Find Admin User Selector (dynamic lookup) --#}
 
                     {%- set entry_id = '<< integration.entry_id >>' -%}
 
@@ -1366,11 +1284,11 @@
                   {%- if admin_selector_eid == '' -%}
                     {%- set name = '' -%}
                   {%- else -%}
-                    {%- set selected_assignee_name = states(admin_selector_eid) -%}
-                    {%- if selected_assignee_name in ['None', '', 'unknown', 'unavailable'] -%}
+                    {%- set selected_user_name = states(admin_selector_eid) -%}
+                    {%- if selected_user_name in ['None', '', 'unknown', 'unavailable'] -%}
                       {%- set name = '' -%}
                     {%- else -%}
-                      {%- set name = selected_assignee_name -%}
+                      {%- set name = selected_user_name -%}
                     {%- endif -%}
                   {%- endif -%}
 
@@ -1384,7 +1302,7 @@
                     {{
                       {
                         'type': 'markdown',
-                        'content': "⚠️ **Select a Assignee First**\n\nUse the **Assignee Selector** above to choose\nwhich child's activity to view.\n\n📊 **Activity Log:**\n- Select from dropdown\n- 7-day history will appear\n- Track all recent actions"
+                        'content': "⚠️ **Select a user first**\n\nUse the **User selector** above to choose\nwhich user's activity to view.\n\n📊 **Activity log:**\n- Select from dropdown\n- 7-day history will appear\n- Track all recent actions"
                       }
                     }},
                     {%- set skip_render = true -%}
@@ -1392,7 +1310,7 @@
                     {{
                       {
                         'type': 'markdown',
-                        'content': "⚠️ **Dashboard Configuration Error**\n\nCannot find: `" ~ dashboard_helper ~ "`\n\nThe ChoreOps integration may not have a child\nnamed \'" ~ name ~ "\'. Check Settings → Integrations →\nChoreOps to verify the name matches exactly.\n\n📖 [Setup Instructions](https://github.com/ccpk1/choreops-ha-dashboard?tab=readme-ov-file#-how-to-implement-this-dashboard)"
+                        'content': "⚠️ **Dashboard Configuration Error**\n\nCannot find: `" ~ dashboard_helper ~ "`\n\nThe ChoreOps integration may not have a user\nnamed \'" ~ name ~ "\'. Check Settings → Integrations →\nChoreOps to verify the name matches exactly.\n\n📖 [Setup Instructions](https://github.com/ccpk1/choreops-ha-dashboard?tab=readme-ov-file#-how-to-implement-this-dashboard)"
                       }
                     }},
                     {%- set skip_render = true -%}

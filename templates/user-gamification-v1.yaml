@@ -6,8 +6,14 @@
 <#-- Gamification dashboard: full experience   --#>
 <#--                                             --#>
 <#-- Injection variables (Python << >>):         --#>
-<#--   << user.name >> - Child's display name     --#>
+<#--   << user.name >> - User's display name      --#>
 <#--   << user.slug >> - URL-safe slug            --#>
+<#--                                             --#>
+<#-- Snippet tokens: template_snippets.user_setup,                       --#>
+<#-- template_snippets.user_validation,                                  --#>
+<#-- template_snippets.user_override_helper, template_snippets.meta_stamp --#>
+<#-- Stamp format (canonical): META STAMP: {template_id} • {release} • {generated_at} --#>
+<#-- Stamp placement: first line inside each card template block after card header comment --#>
 <#--                                             --#>
 <#-- All HA Jinja2 {{ }} syntax preserved       --#>
 <#-- ============================================= --#>
@@ -29,51 +35,21 @@
                 columns: 1
               card_param: cards
               filter:
-                template: >-
+                template: |-
                   {#-- ===== WELCOME CARD ===== --#}
 
+                  << template_snippets.meta_stamp >>
 
                   {#-- 1. User Configuration --#}
 
-                  {%- set name = '<< user.name >>' -%}
-                  {%- set user_id = '<< user.user_id >>' -%}
-                  {%- set entry_id = '<< integration.entry_id >>' -%}
-                  {%- set lookup_key = entry_id ~ ':' ~ user_id -%}
+                  << template_snippets.user_override_helper >>
 
+                  {#-- 2. Dynamic Lookups & Validations --#}
 
-                  {#-- 2. Initialize Variables --#}
+                  << template_snippets.user_setup >>
 
-                  {%- set dashboard_helper = integration_entities('choreops')
-                      | select('search', '^sensor\\.')
-                      | list
-                      | expand
-                      | selectattr('attributes.purpose', 'defined')
-                      | selectattr('attributes.purpose', 'eq', 'purpose_dashboard_helper')
-                      | selectattr('attributes.dashboard_lookup_key', 'eq', lookup_key)
-                      | map(attribute='entity_id')
-                      | first
-                      | default("err-dashboard_helper_missing", true) -%}
+                  << template_snippets.user_validation >>
 
-                  {#-- Validation: Check if name is configured --#}
-                  {%- if name == 'K i d n a m e' | replace(' ', '') or name == '' -%}
-                    {{
-                      {
-                        'type': 'markdown',
-                        'content': "⚠️ **Dashboard Not Configured**\n\nDashboard variable `name=` not set.\n\n**Fix:** Change `'<< user.name >>'` to child's name in\nthe **User Configuration** section at top.\n\n**Tip:** Use Find & Replace (Ctrl+F) in edit\nmode to update all cards at once.\n\n📖 [Setup Instructions](https://github.com/ccpk1/choreops-ha-dashboard?tab=readme-ov-file#-how-to-implement-this-dashboard)"
-                      }
-                    }},
-                    {%- set skip_render = true -%}
-                  {%- elif states(dashboard_helper) in ['unknown', 'unavailable'] -%}
-                    {{
-                      {
-                        'type': 'markdown',
-                        'content': "⚠️ **Dashboard Configuration Error**\n\nCannot find: `" ~ dashboard_helper ~ "`\n\nThe ChoreOps integration may not have a child\nnamed \'" ~ name ~ "\'. Check Settings → Integrations →\nChoreOps to verify the name matches exactly.\n\n📖 [Setup Instructions](https://github.com/ccpk1/choreops-ha-dashboard?tab=readme-ov-file#-how-to-implement-this-dashboard)"
-                      }
-                    }},
-                    {%- set skip_render = true -%}
-                  {%- else -%}
-                    {%- set skip_render = false -%}
-                  {%- endif -%}
 
                   {%- if not skip_render -%}
 
@@ -131,16 +107,15 @@
                 columns: 1
               card_param: cards
               filter:
-                template: >-
+                template: |-
                   {#-- ===== CHORES CARD ===== --#}
+
+                  << template_snippets.meta_stamp >>
 
 
                   {#-- 1. User Configuration --#}
 
-                  {%- set name = '<< user.name >>' -%}
-                  {%- set user_id = '<< user.user_id >>' -%}
-                  {%- set entry_id = '<< integration.entry_id >>' -%}
-                  {%- set lookup_key = entry_id ~ ':' ~ user_id -%}
+                  << template_snippets.user_override_helper >>
 
                   {%- set pref_column_count = 2 -%}
 
@@ -177,18 +152,15 @@
                   {%- set pref_exclude_label_list = pref_exclude_label_list if pref_exclude_label_list is iterable and pref_exclude_label_list is not string else [] -%}
                   {%- set pref_label_display_order = pref_label_display_order if pref_label_display_order is iterable and pref_label_display_order is not string else [] -%}
 
-                  {#-- 2. Initialize Variables --#}
+                  {#-- 2. Dynamic Lookups & Validations --#}
 
-                  {%- set dashboard_helper = integration_entities('choreops')
-                      | select('search', '^sensor\\.')
-                      | list
-                      | expand
-                      | selectattr('attributes.purpose', 'defined')
-                      | selectattr('attributes.purpose', 'eq', 'purpose_dashboard_helper')
-                      | selectattr('attributes.dashboard_lookup_key', 'eq', lookup_key)
-                      | map(attribute='entity_id')
-                      | first
-                      | default("err-dashboard_helper_missing", true) -%}
+                  << template_snippets.user_setup >>
+
+                  << template_snippets.user_validation >>
+
+                  {%- if not skip_render -%}
+
+                    {#-- 3. Initialize Variables --#}
 
                   {%- set ns = namespace(
                     overdue_buttons=[],
@@ -201,30 +173,7 @@
                     group_cards=[]
                   ) -%}
 
-                  {#-- Validation: Check if name is configured --#}
-                  {%- if name == 'K i d n a m e' | replace(' ', '') or name == '' -%}
-                    {{
-                      {
-                        'type': 'markdown',
-                        'content': "⚠️ **Dashboard Not Configured**\n\nDashboard variable `name=` not set.\n\n**Fix:** Change `'<< user.name >>'` to child's name in\nthe **User Configuration** section at top.\n\n**Tip:** Use Find & Replace (Ctrl+F) in edit\nmode to update all cards at once.\n\n📖 [Setup Instructions](https://github.com/ccpk1/choreops-ha-dashboard?tab=readme-ov-file#-how-to-implement-this-dashboard)"
-                      }
-                    }},
-                    {%- set skip_render = true -%}
-                  {%- elif states(dashboard_helper) in ['unknown', 'unavailable'] -%}
-                    {{
-                      {
-                        'type': 'markdown',
-                        'content': "⚠️ **Dashboard Configuration Error**\n\nCannot find: `" ~ dashboard_helper ~ "`\n\nThe ChoreOps integration may not have a child\nnamed \'" ~ name ~ "\'. Check Settings → Integrations →\nChoreOps to verify the name matches exactly.\n\n📖 [Setup Instructions](https://github.com/ccpk1/choreops-ha-dashboard?tab=readme-ov-file#-how-to-implement-this-dashboard)"
-                      }
-                    }},
-                    {%- set skip_render = true -%}
-                  {%- else -%}
-                    {%- set skip_render = false -%}
-                  {%- endif -%}
-
-                  {%- if not skip_render -%}
-
-                    {#-- 3. Collect Data --#}
+                    {#-- 4. Collect Data --#}
                     {%- set core_sensors = state_attr(dashboard_helper, 'core_sensors') or {} -%}
                     {%- set points_sensor = core_sensors.get('points_eid') -%}
                     {%- set translation_sensor = (state_attr(dashboard_helper, 'dashboard_helpers') or {}).get('translation_sensor_eid') -%}
@@ -234,7 +183,7 @@
                     {%- set chore_list = state_attr(dashboard_helper, 'chores') | default([], true) -%}
                     {%- set chores_by_label_raw = state_attr(dashboard_helper, 'chores_by_label') | default({}, true) -%}
 
-                    {#-- 4. Build Display --#}
+                    {#-- 5. Build Display --#}
                     {%- for chore in chore_list -%}
                       {%- set chore_sensor_id = chore.eid if chore is mapping else chore -%}
                       {%- set chore_status = chore.state if chore is mapping else states(chore_sensor_id) -%}
@@ -401,7 +350,7 @@
                       {%- set button_groups = ns.sorted_groups -%}
                     {%- endif -%}
 
-                    {#-- 5. Render --#}
+                    {#-- 6. Render --#}
                     {{
                       {
                         'type': 'heading',
@@ -553,16 +502,15 @@
                 columns: 1
               card_param: cards
               filter:
-                template: >-
+                template: |-
                   {#-- ===== REWARDS CARD ===== --#}
+
+                  << template_snippets.meta_stamp >>
 
 
                   {#-- 1. User Configuration --#}
 
-                  {%- set name = '<< user.name >>' -%}
-                  {%- set user_id = '<< user.user_id >>' -%}
-                  {%- set entry_id = '<< integration.entry_id >>' -%}
-                  {%- set lookup_key = entry_id ~ ':' ~ user_id -%}
+                  << template_snippets.user_override_helper >>
 
                   {%- set pref_column_count = 1 -%}
 
@@ -581,18 +529,15 @@
                   {%- set pref_exclude_label_list = pref_exclude_label_list if pref_exclude_label_list is iterable and pref_exclude_label_list is not string else [] -%}
                   {%- set pref_label_display_order = pref_label_display_order if pref_label_display_order is iterable and pref_label_display_order is not string else [] -%}
 
-                  {#-- 2. Initialize Variables --#}
+                  {#-- 2. Dynamic Lookups & Validations --#}
 
-                  {%- set dashboard_helper = integration_entities('choreops')
-                      | select('search', '^sensor\\.')
-                      | list
-                      | expand
-                      | selectattr('attributes.purpose', 'defined')
-                      | selectattr('attributes.purpose', 'eq', 'purpose_dashboard_helper')
-                      | selectattr('attributes.dashboard_lookup_key', 'eq', lookup_key)
-                      | map(attribute='entity_id')
-                      | first
-                      | default("err-dashboard_helper_missing", true) -%}
+                  << template_snippets.user_setup >>
+
+                  << template_snippets.user_validation >>
+
+                  {%- if not skip_render -%}
+
+                    {#-- 3. Initialize Variables --#}
 
                   {%- set ns = namespace(
                     all_labels=[],
@@ -605,30 +550,7 @@
                     group_cards=[]
                   ) -%}
 
-                  {#-- Validation: Check if name is configured --#}
-                  {%- if name == 'K i d n a m e' | replace(' ', '') or name == '' -%}
-                    {{
-                      {
-                        'type': 'markdown',
-                        'content': "⚠️ **Dashboard Not Configured**\n\nDashboard variable `name=` not set.\n\n**Fix:** Change `'<< user.name >>'` to child's name in\nthe **User Configuration** section at top.\n\n**Tip:** Use Find & Replace (Ctrl+F) in edit\nmode to update all cards at once.\n\n📖 [Setup Instructions](https://github.com/ccpk1/choreops-ha-dashboard?tab=readme-ov-file#-how-to-implement-this-dashboard)"
-                      }
-                    }},
-                    {%- set skip_render = true -%}
-                  {%- elif states(dashboard_helper) in ['unknown', 'unavailable'] -%}
-                    {{
-                      {
-                        'type': 'markdown',
-                        'content': "⚠️ **Dashboard Configuration Error**\n\nCannot find: `" ~ dashboard_helper ~ "`\n\nThe ChoreOps integration may not have a child\nnamed '" ~ name ~ "'. Check Settings → Integrations →\nChoreOps to verify the name matches exactly.\n\n📖 [Setup Instructions](https://github.com/ccpk1/choreops-ha-dashboard?tab=readme-ov-file#-how-to-implement-this-dashboard)"
-                      }
-                    }},
-                    {%- set skip_render = true -%}
-                  {%- else -%}
-                    {%- set skip_render = false -%}
-                  {%- endif -%}
-
-                  {%- if not skip_render -%}
-
-                    {#-- 3. Collect Data --#}
+                    {#-- 4. Collect Data --#}
                     {%- set core_sensors = state_attr(dashboard_helper, 'core_sensors') or {} -%}
                     {%- set points_sensor = core_sensors.get('points_eid') -%}
                     {%- set translation_sensor = (state_attr(dashboard_helper, 'dashboard_helpers') or {}).get('translation_sensor_eid') -%}
@@ -651,7 +573,7 @@
                       {%- set reward_list = ns.filtered_rewards -%}
                     {%- endif -%}
 
-                    {#-- 4. Build Display Groups --#}
+                    {#-- 5. Build Display Groups --#}
                     {%- if pref_use_label_grouping and reward_list | length > 0 -%}
                       {#-- Determine all unique labels from rewards (only when grouping enabled) --#}
                       {%- for reward in reward_list -%}
@@ -744,7 +666,7 @@
                       {%- set ns.label_groups = ns.sorted_groups -%}
                     {%- endif -%}
 
-                    {#-- 5. Render --#}
+                    {#-- 6. Render --#}
                     {%- if gamification_enabled -%}
                     {%- if ns.label_groups | length == 0 -%}
                       {{
@@ -901,7 +823,7 @@
                     {{
                       {
                         'type': 'markdown',
-                        'content': "⚠️ **Dashboard Not Configured**\n\nDashboard variable `name=` not set.\n\n**Fix:** Change `'<< user.name >>'` to child's name in\nthe **User Configuration** section at top.\n\n**Tip:** Use Find & Replace (Ctrl+F) in edit\nmode to update all cards at once.\n\n📖 [Setup Instructions](https://github.com/ccpk1/choreops-ha-dashboard?tab=readme-ov-file#-how-to-implement-this-dashboard)"
+                        'content': "⚠️ **Dashboard Not Configured**\n\nDashboard variable `name=` not set.\n\n**Fix:** Change `'<< user.name >>'` to user's name in\nthe **User Configuration** section at top.\n\n**Tip:** Use Find & Replace (Ctrl+F) in edit\nmode to update all cards at once.\n\n📖 [Setup Instructions](https://github.com/ccpk1/choreops-ha-dashboard?tab=readme-ov-file#-how-to-implement-this-dashboard)"
                       }
                     }},
                     {%- set skip_render = true -%}
@@ -909,7 +831,7 @@
                     {{
                       {
                         'type': 'markdown',
-                        'content': "⚠️ **Dashboard Configuration Error**\n\nCannot find: `" ~ dashboard_helper ~ "`\n\nThe ChoreOps integration may not have a child\nnamed \'" ~ name ~ "\'. Check Settings → Integrations →\nChoreOps to verify the name matches exactly.\n\n📖 [Setup Instructions](https://github.com/ccpk1/choreops-ha-dashboard?tab=readme-ov-file#-how-to-implement-this-dashboard)"
+                        'content': "⚠️ **Dashboard Configuration Error**\n\nCannot find: `" ~ dashboard_helper ~ "`\n\nThe ChoreOps integration may not have a user\nnamed \'" ~ name ~ "\'. Check Settings → Integrations →\nChoreOps to verify the name matches exactly.\n\n📖 [Setup Instructions](https://github.com/ccpk1/choreops-ha-dashboard?tab=readme-ov-file#-how-to-implement-this-dashboard)"
                       }
                     }},
                     {%- set skip_render = true -%}
@@ -1153,7 +1075,7 @@
                 {{
                   {
                     'type': 'markdown',
-                    'content': "⚠️ **Dashboard Not Configured**\n\nDashboard variable `name=` not set.\n\n**Fix:** Change `'<< user.name >>'` to child's name in\nthe **User Configuration** section at top.\n\n**Tip:** Use Find & Replace (Ctrl+F) in edit\nmode to update all cards at once.\n\n📖 [Setup Instructions](https://github.com/ccpk1/choreops-ha-dashboard?tab=readme-ov-file#-how-to-implement-this-dashboard)"
+                    'content': "⚠️ **Dashboard Not Configured**\n\nDashboard variable `name=` not set.\n\n**Fix:** Change `'<< user.name >>'` to user's name in\nthe **User Configuration** section at top.\n\n**Tip:** Use Find & Replace (Ctrl+F) in edit\nmode to update all cards at once.\n\n📖 [Setup Instructions](https://github.com/ccpk1/choreops-ha-dashboard?tab=readme-ov-file#-how-to-implement-this-dashboard)"
                   }
                 }},
                 {%- set skip_render = true -%}
@@ -1161,7 +1083,7 @@
                 {{
                   {
                     'type': 'markdown',
-                    'content': "⚠️ **Dashboard Configuration Error**\n\nCannot find: `" ~ dashboard_helper ~ "`\n\nThe ChoreOps integration may not have a child\nnamed \'" ~ name ~ "\'. Check Settings → Integrations →\nChoreOps to verify the name matches exactly.\n\n📖 [Setup Instructions](https://github.com/ccpk1/choreops-ha-dashboard?tab=readme-ov-file#-how-to-implement-this-dashboard)"
+                    'content': "⚠️ **Dashboard Configuration Error**\n\nCannot find: `" ~ dashboard_helper ~ "`\n\nThe ChoreOps integration may not have a user\nnamed \'" ~ name ~ "\'. Check Settings → Integrations →\nChoreOps to verify the name matches exactly.\n\n📖 [Setup Instructions](https://github.com/ccpk1/choreops-ha-dashboard?tab=readme-ov-file#-how-to-implement-this-dashboard)"
                   }
                 }},
                 {%- set skip_render = true -%}
@@ -1437,7 +1359,7 @@
                 {{
                   {
                     'type': 'markdown',
-                    'content': "⚠️ **Dashboard Not Configured**\n\nDashboard variable `name=` not set.\n\n**Fix:** Change `'<< user.name >>'` to child's name in\nthe **User Configuration** section at top.\n\n**Tip:** Use Find & Replace (Ctrl+F) in edit\nmode to update all cards at once.\n\n📖 [Setup Instructions](https://github.com/ccpk1/choreops-ha-dashboard?tab=readme-ov-file#-how-to-implement-this-dashboard)"
+                    'content': "⚠️ **Dashboard Not Configured**\n\nDashboard variable `name=` not set.\n\n**Fix:** Change `'<< user.name >>'` to user's name in\nthe **User Configuration** section at top.\n\n**Tip:** Use Find & Replace (Ctrl+F) in edit\nmode to update all cards at once.\n\n📖 [Setup Instructions](https://github.com/ccpk1/choreops-ha-dashboard?tab=readme-ov-file#-how-to-implement-this-dashboard)"
                   }
                 }},
                 {%- set skip_render = true -%}
@@ -1445,7 +1367,7 @@
                 {{
                   {
                     'type': 'markdown',
-                    'content': "⚠️ **Dashboard Configuration Error**\n\nCannot find: `" ~ dashboard_helper ~ "`\n\nThe ChoreOps integration may not have a child\nnamed \'" ~ name ~ "\'. Check Settings → Integrations →\nChoreOps to verify the name matches exactly.\n\n📖 [Setup Instructions](https://github.com/ccpk1/choreops-ha-dashboard?tab=readme-ov-file#-how-to-implement-this-dashboard)"
+                    'content': "⚠️ **Dashboard Configuration Error**\n\nCannot find: `" ~ dashboard_helper ~ "`\n\nThe ChoreOps integration may not have a user\nnamed \'" ~ name ~ "\'. Check Settings → Integrations →\nChoreOps to verify the name matches exactly.\n\n📖 [Setup Instructions](https://github.com/ccpk1/choreops-ha-dashboard?tab=readme-ov-file#-how-to-implement-this-dashboard)"
                   }
                 }},
                 {%- set skip_render = true -%}
@@ -1606,7 +1528,7 @@
                     {{
                       {
                         'type': 'markdown',
-                        'content': "⚠️ **Dashboard Not Configured**\n\nDashboard variable `name=` not set.\n\n**Fix:** Change `'<< user.name >>'` to child's name in\nthe **User Configuration** section at top.\n\n**Tip:** Use Find & Replace (Ctrl+F) in edit\nmode to update all cards at once.\n\n📖 [Setup Instructions](https://github.com/ccpk1/choreops-ha-dashboard?tab=readme-ov-file#-how-to-implement-this-dashboard)"
+                        'content': "⚠️ **Dashboard Not Configured**\n\nDashboard variable `name=` not set.\n\n**Fix:** Change `'<< user.name >>'` to user's name in\nthe **User Configuration** section at top.\n\n**Tip:** Use Find & Replace (Ctrl+F) in edit\nmode to update all cards at once.\n\n📖 [Setup Instructions](https://github.com/ccpk1/choreops-ha-dashboard?tab=readme-ov-file#-how-to-implement-this-dashboard)"
                       }
                     }},
                     {%- set skip_render = true -%}
@@ -1614,7 +1536,7 @@
                     {{
                       {
                         'type': 'markdown',
-                        'content': "⚠️ **Dashboard Configuration Error**\n\nCannot find: `" ~ dashboard_helper ~ "`\n\nThe ChoreOps integration may not have a child\nnamed \'" ~ name ~ "\'. Check Settings → Integrations →\nChoreOps to verify the name matches exactly.\n\n📖 [Setup Instructions](https://github.com/ccpk1/choreops-ha-dashboard?tab=readme-ov-file#-how-to-implement-this-dashboard)"
+                        'content': "⚠️ **Dashboard Configuration Error**\n\nCannot find: `" ~ dashboard_helper ~ "`\n\nThe ChoreOps integration may not have a user\nnamed \'" ~ name ~ "\'. Check Settings → Integrations →\nChoreOps to verify the name matches exactly.\n\n📖 [Setup Instructions](https://github.com/ccpk1/choreops-ha-dashboard?tab=readme-ov-file#-how-to-implement-this-dashboard)"
                       }
                     }},
                     {%- set skip_render = true -%}
@@ -1661,14 +1583,14 @@
                           {%- set associated_chore = state_attr(achievement_sensor_id, 'associated_chore') | default('') -%}
                           {%- set description = state_attr(achievement_sensor_id, 'description') | default('') -%}
                           {%- set criteria = state_attr(achievement_sensor_id, 'criteria') | default('') -%}
-                          {%- set assigned_assignees = state_attr(achievement_sensor_id, 'assigned_assignees') | default([], true) -%}
+                          {%- set assigned_users = state_attr(achievement_sensor_id, 'assigned_assignees') | default([], true) -%}
 
                         {%- set awarded_text = "✔️ " ~ ui.get('earned', 'err-earned') if awarded else "⌛ " ~ ui.get('in_progress', 'err-in_progress') -%}
                         {%- set goal_type_label =
                           target_value ~ ' (' ~ ns.STREAK_GOAL ~ ')' if achievement_type == 'chore_streak'
                           else target_value ~ ' (' ~ ns.DAILY_MINIMUM ~ ')' if achievement_type == 'daily_minimum'
                           else target_value ~ ' (' ~ ns.TOTAL_CHORES ~ ')' -%}
-                        {%- set assignees_display = assigned_assignees | join(', ') if assigned_assignees | count > 0 else '' -%}
+                        {%- set users_display = assigned_users | join(', ') if assigned_users | count > 0 else '' -%}
 
                         {%- set content = "## <ha-icon icon=" ~ achievement_icon ~ "></ha-icon> " ~ ui.get('achievement', 'err-achievement') ~ ": " ~ achievement_name ~ "  \n" -%}
                         {%- set content = content ~ "### 🏅 " ~ ui.get('award_status', 'err-award_status') ~ ": &nbsp;&nbsp;" ~ awarded_text ~ "  \n" -%}
@@ -1691,8 +1613,8 @@
                           {%- set content = content ~ "\n **📊 " ~ ui.get('progress', 'err-progress') ~ ":** &nbsp;&nbsp;" ~ raw_progress|int|string ~ "/" ~ target_value|string ~ " (" ~ progress_percentage|string ~ "%)  \n" -%}
                         {%- endif -%}
 
-                        {%- if assignees_display -%}
-                          {%- set content = content ~ "**👥 " ~ ui.get('assigned_to', 'err-assigned_to') ~ ":** &nbsp;&nbsp;" ~ assignees_display ~ "  \n" -%}
+                        {%- if users_display -%}
+                          {%- set content = content ~ "**👥 " ~ ui.get('assigned_to', 'err-assigned_to') ~ ":** &nbsp;&nbsp;" ~ users_display ~ "  \n" -%}
                         {%- endif -%}
 
                         {%- if associated_chore -%}
@@ -1751,7 +1673,7 @@
                     {{
                       {
                         'type': 'markdown',
-                        'content': "⚠️ **Dashboard Not Configured**\n\nDashboard variable `name=` not set.\n\n**Fix:** Change `'<< user.name >>'` to child's name in\nthe **User Configuration** section at top.\n\n**Tip:** Use Find & Replace (Ctrl+F) in edit\nmode to update all cards at once.\n\n📖 [Setup Instructions](https://github.com/ccpk1/choreops-ha-dashboard?tab=readme-ov-file#-how-to-implement-this-dashboard)"
+                        'content': "⚠️ **Dashboard Not Configured**\n\nDashboard variable `name=` not set.\n\n**Fix:** Change `'<< user.name >>'` to user's name in\nthe **User Configuration** section at top.\n\n**Tip:** Use Find & Replace (Ctrl+F) in edit\nmode to update all cards at once.\n\n📖 [Setup Instructions](https://github.com/ccpk1/choreops-ha-dashboard?tab=readme-ov-file#-how-to-implement-this-dashboard)"
                       }
                     }},
                     {%- set skip_render = true -%}
@@ -1759,7 +1681,7 @@
                     {{
                       {
                         'type': 'markdown',
-                        'content': "⚠️ **Dashboard Configuration Error**\n\nCannot find: `" ~ dashboard_helper ~ "`\n\nThe ChoreOps integration may not have a child\nnamed \'" ~ name ~ "\'. Check Settings → Integrations →\nChoreOps to verify the name matches exactly.\n\n📖 [Setup Instructions](https://github.com/ccpk1/choreops-ha-dashboard?tab=readme-ov-file#-how-to-implement-this-dashboard)"
+                        'content': "⚠️ **Dashboard Configuration Error**\n\nCannot find: `" ~ dashboard_helper ~ "`\n\nThe ChoreOps integration may not have a user\nnamed \'" ~ name ~ "\'. Check Settings → Integrations →\nChoreOps to verify the name matches exactly.\n\n📖 [Setup Instructions](https://github.com/ccpk1/choreops-ha-dashboard?tab=readme-ov-file#-how-to-implement-this-dashboard)"
                       }
                     }},
                     {%- set skip_render = true -%}
@@ -1805,14 +1727,14 @@
                           {%- set associated_chore = state_attr(challenge_sensor_id, 'associated_chore') | default('') -%}
                           {%- set description = state_attr(challenge_sensor_id, 'description') | default('') -%}
                           {%- set criteria = state_attr(challenge_sensor_id, 'criteria') | default('') -%}
-                          {%- set assigned_assignees = state_attr(challenge_sensor_id, 'assigned_assignees') | default([], true) -%}
+                          {%- set assigned_users = state_attr(challenge_sensor_id, 'assigned_assignees') | default([], true) -%}
 
                           {%- set awarded_text = "✔️ " ~ ui.get('earned', 'err-earned') if awarded else "⌛ " ~ ui.get('in_progress', 'err-in_progress') -%}
                           {%- set goal_type_label =
                             target_value ~ ' (' ~ ui.get('total_chores', 'err-total_chores') ~ ')' if challenge_type == 'total_within_window'
                             else target_value ~ ' (' ~ ui.get('per_day_goal', 'err-per_day_goal') ~ ')'
                           -%}
-                          {%- set assignees_display = assigned_assignees | join(', ') if assigned_assignees | count > 0 else '' -%}
+                          {%- set users_display = assigned_users | join(', ') if assigned_users | count > 0 else '' -%}
 
                           {%- set start_date_utc = state_attr(challenge_sensor_id, 'start_date') -%}
                           {%- set end_date_utc = state_attr(challenge_sensor_id, 'end_date') -%}
@@ -1842,8 +1764,8 @@
                             {%- set content = content ~ "\n **📊 " ~ ui.get('progress', 'err-progress') ~ ":** &nbsp;&nbsp;" ~ raw_progress|int|string ~ "/" ~ target_value|string ~ " (" ~ progress_percentage|string ~ "%)  \n" -%}
                           {%- endif -%}
 
-                          {%- if assignees_display -%}
-                            {%- set content = content ~ "**👥 " ~ ui.get('assigned_to', 'err-assigned_to') ~ ":** &nbsp;&nbsp;" ~ assignees_display ~ "  \n" -%}
+                          {%- if users_display -%}
+                            {%- set content = content ~ "**👥 " ~ ui.get('assigned_to', 'err-assigned_to') ~ ":** &nbsp;&nbsp;" ~ users_display ~ "  \n" -%}
                           {%- endif -%}
 
                           {%- if associated_chore -%}
