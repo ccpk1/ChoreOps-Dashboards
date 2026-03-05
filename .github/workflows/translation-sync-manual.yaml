@@ -1,5 +1,13 @@
 name: Dashboard Translation Sync
 
+# This workflow syncs dashboard translations with Crowdin for automated translation.
+# Source file mappings are defined in crowdin.yml (root directory).
+# Crowdin configuration:
+#   - Source: translations/en_dashboard.json
+#
+# The workflow runs automatically when English dashboard source files are modified,
+# or can be triggered manually from the Actions tab (main branch only).
+
 on:
   push:
     branches:
@@ -21,11 +29,11 @@ permissions:
 
 jobs:
   synchronize-with-crowdin:
-    name: Sync dashboard translations
+    name: Sync and Translate
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
+      - name: Checkout Code
         uses: actions/checkout@v4
         with:
           ref: ${{ inputs.branch || github.ref_name }}
@@ -45,7 +53,8 @@ jobs:
             echo "::notice::Crowdin secrets detected. Dashboard translation sync will run."
           fi
 
-      - name: Upload dashboard source
+      # STEP 1: Upload Sources
+      - name: Upload Sources
         if: steps.crowdin_preflight.outputs.run_crowdin == 'true'
         uses: crowdin/github-action@v2
         with:
@@ -58,7 +67,22 @@ jobs:
           CROWDIN_PROJECT_ID: ${{ secrets.CROWDIN_PROJECT_ID }}
           CROWDIN_PERSONAL_TOKEN: ${{ secrets.CROWDIN_PERSONAL_TOKEN }}
 
-      - name: Download dashboard translations
+      # STEP 2: Trigger Google Translate (MT) via Crowdin CLI
+      # This auto translate service has a cost associated with it, so it may be stopped or disabled in the future.
+      - name: Trigger Google Translate
+        if: steps.crowdin_preflight.outputs.run_crowdin == 'true'
+        run: |
+          npm install -g @crowdin/cli
+          crowdin pre-translate \
+            --method mt \
+            --engine-id 646964 \
+            --translate-untranslated-only
+        env:
+          CROWDIN_PROJECT_ID: ${{ secrets.CROWDIN_PROJECT_ID }}
+          CROWDIN_PERSONAL_TOKEN: ${{ secrets.CROWDIN_PERSONAL_TOKEN }}
+
+      # STEP 3: Download & Create PR
+      - name: Download Translations
         if: steps.crowdin_preflight.outputs.run_crowdin == 'true'
         uses: crowdin/github-action@v2
         with:
@@ -93,13 +117,13 @@ jobs:
             exit 0
           fi
 
-          gh pr edit "$pr_number" \
-            --add-label "l10n" \
-            --add-label "automation: l10n" \
-            --add-label "priority: low" \
-            --add-label "area: dashboard"
+          labels=("l10n" "automation: l10n" "priority: low" "area: dashboard")
+
+          for label in "${labels[@]}"; do
+            gh pr edit "$pr_number" --add-label "$label"
+          done
 
       - name: Crowdin sync skipped
         if: steps.crowdin_preflight.outputs.run_crowdin != 'true'
         run: |
-          echo "Dashboard translation sync skipped: repository secrets are not configured."
+          echo "Dashboard translation sync skipped: repository secrets are not configured yet."
