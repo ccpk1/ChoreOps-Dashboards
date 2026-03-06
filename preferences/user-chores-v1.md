@@ -12,8 +12,12 @@
 
 ## Card: Chores
 
-- `pref_column_count` (default: `3`)
-  - Grid columns for chore cards.
+- `pref_column_count_mobile` (default: `1`)
+  - Grid columns for chore cards on mobile-width screens.
+  - Allowed: positive integer.
+
+- `pref_column_count_wide` (default: `3`)
+  - Grid columns for chore cards on wide screens.
   - Allowed: positive integer.
 
 - `pref_use_overdue_grouping` (default: `true`)
@@ -73,7 +77,7 @@
 
 ## Practical tuning examples
 
-- Keep it minimal: set only `pref_column_count`, leave everything else as default.
+- Keep it minimal: set only `pref_column_count_mobile` / `pref_column_count_wide`, leave everything else as default.
 - Hide done chores: add `completed` to `pref_exclude_states` (for example `['completed']`).
 - Build a label board: set `pref_use_label_grouping: true` and define `pref_label_display_order`.
 - Prioritize urgent work: keep `pref_use_overdue_grouping: true` and use `pref_sort_within_groups: by_state_and_date`.

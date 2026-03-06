@@ -1,23 +1,19 @@
-# user-kids-chores-v1 preferences
+# user-game-full-v1 preferences
 
-`user-kids-chores-v1` is a kid-focused chores layout based on `user-chores-v1` semantics, with larger, simpler, friendlier button-card tiles.
+`user-game-full-v1` is a modern full user layout that starts with the welcome + chores flow and reuses the production shared chore-row behavior.
 
 ## Quick overview
 
-- Keeps baseline color/state/action semantics aligned with the user chores experience.
-- Kid-style tile UX: larger icon and title, simplified status/readout, and clearer tap target.
-- Action model is intentionally simplified: tap to claim/approve when available, hold for more-info.
+- Feature-complete chore UX: includes shared progress context, claim-mode nuance, overdue/missed context, and claim/approve/undo controls.
+- Modular shared-template architecture: core chore-row logic is sourced from `templates/shared/button_card_template_user_chores_row_v1.yaml` and composed into published runtime templates.
+- Portability note: copy from composed runtime templates (vendored output), not directly from shared fragment source files.
 - Friendly for drag-and-drop workflows: keep defaults for a simple setup, then tune behavior with `pref_*` values.
 - Supports practical organization controls (time buckets, labels, sorting, and state filtering).
 
 ## Card: Chores
 
-- `pref_column_count_mobile` (default: `2`)
-  - Grid columns for chore cards on mobile-width screens (`max-width: 768px`).
-  - Allowed: positive integer.
-
-- `pref_column_count_wide` (default: `5`)
-  - Grid columns for chore cards on wider screens (`min-width: 769px`).
+- `pref_column_count` (default: `1`)
+  - Grid columns for chore cards.
   - Allowed: positive integer.
 
 - `pref_use_overdue_grouping` (default: `true`)
@@ -66,18 +62,50 @@
   - Labels not listed still appear afterward in alphabetical order.
   - Allowed: array of label strings.
 
-- `pref_sort_within_groups` (default: `default`)
+- `pref_sort_within_groups` (default: `by_state_and_date`)
   - Sorting mode inside each rendered group.
   - Allowed: `default`, `name_asc`, `name_desc`, `date_asc`, `date_desc`, `by_state_and_date`.
 
 - `pref_show_chore_description` (default: `false`)
-  - Reserved for compatibility with shared preference patterns.
-  - Kids tile layout keeps the card simplified and does not render description content.
+  - Shows the optional description row when a chore has non-empty description text.
+  - When `false`, the description row is always hidden.
+  - Allowed: `true`, `false`.
+
+## Card: Rewards
+
+- `pref_column_count` (default: `1`)
+  - Grid columns for reward cards.
+  - Allowed: positive integer.
+
+- `pref_use_label_grouping` (default: `false`)
+  - Groups rewards by label.
+  - When `false`, rewards render in a single group.
+  - Allowed: `true`, `false`.
+
+- `pref_exclude_label_list` (default: `[]`)
+  - Excludes rewards containing any listed labels.
+  - Works with or without label grouping enabled.
+  - Allowed: array of label strings.
+
+- `pref_label_display_order` (default: `[]`)
+  - Optional explicit label-group order when label grouping is enabled.
+  - Any labels not listed still appear afterward.
+  - Allowed: array of label strings.
+
+- `pref_sort_rewards` (default: `default`)
+  - Sorting mode inside each rendered reward group.
+  - Allowed: `default`, `name_asc`, `name_desc`, `cost_asc`, `cost_desc`.
+
+- `pref_show_reward_description` (default: `true`)
+  - Shows reward description as a dedicated row when description text exists.
+  - When `false`, description row is hidden even if reward has description.
   - Allowed: `true`, `false`.
 
 ## Practical tuning examples
 
-- Keep it kid-simple: keep `pref_column_count_mobile: 2`, `pref_column_count_wide: 5`, and `pref_sort_within_groups: default`.
-- Hide done chores: add `completed` to `pref_exclude_states` (for example `['completed']`) when you want only actionable tiles.
+- Keep it minimal: set only `pref_column_count`, leave everything else as default.
+- Hide done chores: add `completed` to `pref_exclude_states` (for example `['completed']`).
 - Build a label board: set `pref_use_label_grouping: true` and define `pref_label_display_order`.
 - Prioritize urgent work: keep `pref_use_overdue_grouping: true` and use `pref_sort_within_groups: by_state_and_date`.
+- Sort rewards by price: set `pref_sort_rewards: cost_asc`.
+- Group rewards by labels: set `pref_use_label_grouping: true` and optionally define `pref_label_display_order`.
