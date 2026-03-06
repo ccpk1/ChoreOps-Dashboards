@@ -20,7 +20,7 @@
 
 views:
 - max_columns: 4
-  title: << user.name >> Chores
+  title: << user.name >>
   path: << user.slug >>
   sections:
     - type: grid

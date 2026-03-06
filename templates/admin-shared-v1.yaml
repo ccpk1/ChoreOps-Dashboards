@@ -1339,7 +1339,7 @@ views:
                     {{- {
                       'type': 'heading',
                       'icon': 'mdi:clipboard-text',
-                      'heading': ui.get('seven_day_activity_log', '7-Day Activity Log'),
+                      'heading': ui.get('seven_day_activity_log', 'err-seven_day_activity_log'),
                       'heading_style': 'title',
                     } -}},{{- {
                       'type': 'logbook',

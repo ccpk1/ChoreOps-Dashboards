@@ -59,13 +59,14 @@ choreops_chore_row_v1:
             "due":
               [
                 { "justify-self": "start" },
+                { "text-align": "left" },
                 { "font-size": "11px" },
                 { "font-weight": "400" },
                 { "line-height": "1.2" },
                 { "margin-bottom": "1px" },
                 { "display": "block" },
                 { "max-width": "100%" },
-                { "white-space": "normal" },
+                { "white-space": "nowrap" },
                 { "overflow": "visible" },
                 { "text-overflow": "clip" },
                 {

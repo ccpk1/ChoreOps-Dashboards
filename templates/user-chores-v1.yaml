@@ -22,7 +22,7 @@ button_card_templates:
   << template_shared.button_card_template_user_chores_row_v1 >>
 views:
   - max_columns: 4
-    title: << user.name >> Chores
+    title: << user.name >>
     path: << user.slug >>
     type: sections
     sections:
@@ -464,29 +464,38 @@ views:
                         'icon': 'mdi:broom',
                         'show_name': true,
                         'show_icon': true,
+                        'tap_action': {'action': 'none'},
+                        'hold_action': {'action': 'none'},
                         'styles': {
                           'card': [
-                            {'background': 'transparent'},
+                            {'background': 'var(--secondary-background-color)'},
                             {'box-shadow': 'none'},
-                            {'border': 'none'},
-                            {'padding': '0px 0px 2px 0px'},
+                            {'border': '1px solid var(--divider-color)'},
+                            {'border-left': '3px solid var(--primary-color)'},
+                            {'border-bottom': '3px solid var(--primary-color)'},
+                            {'border-radius': '10px'},
+                            {'padding': '10px 12px'},
                             {'min-height': 'unset'},
-                            {'margin-bottom': '-10px'}
+                            {'margin-top': '5px'},
+                            {'margin-bottom': '0px'}
                           ],
                           'grid': [
                             {'grid-template-areas': '"i n"'},
                             {'grid-template-columns': 'min-content 1fr'},
-                            {'gap': '1px'},
+                            {'column-gap': '5px'},
                             {'align-items': 'center'}
                           ],
                           'icon': [
-                            {'width': '20px'},
+                            {'width': '18px'},
+                            {'transform': 'translateY(-2px)'},
                             {'color': 'var(--primary-color)'}
                           ],
                           'name': [
                             {'justify-self': 'start'},
-                            {'font-size': '18px'},
-                            {'font-weight': 'bold'},
+                            {'font-size': '14px'},
+                            {'font-weight': '700'},
+                            {'text-transform': 'uppercase'},
+                            {'letter-spacing': '0.4px'},
                             {'color': 'var(--primary-text-color)'}
                           ]
                         }

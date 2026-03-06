@@ -20,7 +20,7 @@
 
 views:
 - max_columns: 4
-  title: << user.name >> Chores
+  title: << user.name >>
   path: << user.slug >>
   sections:
     - type: grid
@@ -1566,7 +1566,7 @@ views:
                       {{
                         {
                           'type': 'markdown',
-                          'content': "### 🏆 " ~ ui.get('no_achievements_found', 'err-no_achievements_found') ~ "  \n" ~ ui.get('start_achievement_prompt', 'err-start_achievement')
+                          'content': "### 🏆 " ~ ui.get('no_achievements_found', 'err-no_achievements_found') ~ "  \n" ~ ui.get('start_achievement_prompt', 'err-start_achievement_prompt')
                         }
                       }},
                     {%- else -%}
