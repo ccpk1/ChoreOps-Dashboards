@@ -1,0 +1,125 @@
+{#-- 6. Render (production-aligned button-card layout) --#}
+{{
+	{
+		'type': 'custom:button-card',
+		'name': ui.get('chores', 'err-chores'),
+		'icon': 'mdi:broom',
+		'show_name': true,
+		'show_icon': true,
+		'tap_action': ({
+			'action': 'call-service',
+			'service': 'choreops.manage_ui_control',
+			'data': {
+				'config_entry_id': integration_entry_id,
+				'user_id': dashboard_helper_user_id,
+				'ui_control_action': 'remove',
+				'key': ui_control_key_header_collapsed
+			}
+		} if header_collapsed and integration_entry_id not in ['', none] and dashboard_helper_user_id not in ['', none] else {
+			'action': 'call-service',
+			'service': 'choreops.manage_ui_control',
+			'data': {
+				'config_entry_id': integration_entry_id,
+				'user_id': dashboard_helper_user_id,
+				'ui_control_action': 'update',
+				'key': ui_control_key_header_collapsed,
+				'value': true
+			}
+		} if integration_entry_id not in ['', none] and dashboard_helper_user_id not in ['', none] else {
+			'action': 'none'
+		}),
+		'hold_action': {'action': 'none'},
+		'custom_fields': {
+			'gear': {
+				'card': {
+					'type': 'custom:button-card',
+					'icon': 'mdi:cog-outline',
+					'show_name': false,
+					'show_icon': true,
+					'tap_action': ({
+						'action': 'call-service',
+						'service': 'choreops.manage_ui_control',
+						'data': {
+							'config_entry_id': integration_entry_id,
+							'user_id': dashboard_helper_user_id,
+							'ui_control_action': 'remove',
+							'key': ui_control_key_settings_open
+						}
+					} if settings_open and integration_entry_id not in ['', none] and dashboard_helper_user_id not in ['', none] else {
+						'action': 'call-service',
+						'service': 'choreops.manage_ui_control',
+						'data': {
+							'config_entry_id': integration_entry_id,
+							'user_id': dashboard_helper_user_id,
+							'ui_control_action': 'update',
+							'key': ui_control_key_settings_open,
+							'value': true
+						}
+					} if integration_entry_id not in ['', none] and dashboard_helper_user_id not in ['', none] else {
+						'action': 'none'
+					}),
+					'hold_action': {'action': 'none'},
+					'styles': {
+						'card': [
+							{'width': '30px'},
+							{'height': '30px'},
+							{'border-radius': '50%'},
+							{'background': ('color-mix(in srgb, var(--primary-color) 12%, var(--card-background-color))') if settings_open else 'transparent'},
+							{'border': '1px solid var(--divider-color)'},
+							{'box-shadow': 'none'}
+						],
+						'icon': [
+							{'width': '16px'},
+							{'color': 'var(--primary-color)'}
+						]
+					}
+				}
+			},
+			'toggle': "<ha-icon icon='" ~ ('mdi:chevron-down' if header_collapsed else 'mdi:chevron-up') ~ "' style='width:18px;height:18px;color: var(--primary-color);'></ha-icon>"
+		},
+		'styles': {
+			'card': [
+				{'background': ('color-mix(in srgb, var(--primary-color) ' ~ pref_primary_tint_mix_pct|string ~ '%, var(--card-background-color))') if header_collapsed else 'transparent'},
+				{'box-shadow': 'none'},
+				{'border': '1px solid var(--divider-color)' if header_collapsed else 'none'},
+				{'border-left': '3px solid var(--primary-color)'},
+				{'border-bottom': '3px solid var(--primary-color)'},
+				{'border-radius': '10px'},
+				{'padding': '10px 12px'},
+				{'min-height': 'unset'},
+				{'margin-top': '5px'},
+				{'margin-bottom': '0px'}
+			],
+			'grid': [
+				{'grid-template-areas': '"i n gear toggle"'},
+				{'grid-template-columns': 'min-content 1fr min-content min-content'},
+				{'column-gap': '5px'},
+				{'align-items': 'center'}
+			],
+			'icon': [
+				{'width': '18px'},
+				{'transform': 'translateY(-2px)'},
+				{'color': 'var(--primary-color)'}
+			],
+			'name': [
+				{'justify-self': 'start'},
+				{'font-size': '14px'},
+				{'font-weight': '700'},
+				{'text-transform': 'uppercase'},
+				{'letter-spacing': '0.4px'},
+				{'color': 'var(--primary-text-color)'}
+			],
+			'custom_fields': {
+				'gear': [
+					{'justify-self': 'end'},
+					{'align-self': 'center'},
+					{'display': 'none' if header_collapsed else 'block'}
+				],
+				'toggle': [
+					{'justify-self': 'end'},
+					{'align-self': 'center'}
+				]
+			}
+		}
+	}
+}},

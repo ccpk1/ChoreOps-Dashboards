@@ -1,0 +1,242 @@
+<#-- ============================================= --#>
+<#-- ChoreOps Dashboard Template - CHORES --#>
+<#-- Template Schema Version: 1                  --#>
+<#-- ============================================= --#>
+<#--                                             --#>
+<#-- Chores dashboard: welcome summary + full shared-row chore UX/logic --#>
+<#--                                             --#>
+<#-- Injection variables (Python << >>):         --#>
+<#--   << user.name >> - User's display name      --#>
+<#--   << user.slug >> - URL-safe slug            --#>
+<#--                                             --#>
+<#-- Snippet tokens: template_snippets.user_setup,                       --#>
+<#-- template_snippets.user_validation,                                  --#>
+<#-- template_snippets.user_override_helper, template_snippets.meta_stamp --#>
+<#-- Stamp format (canonical): META STAMP: {templse} • {generated_at} --#>
+<#-- Stamp placement: first line inside each card template block after card header comment --#>
+<#--                                             --#>
+<#-- All HA Jinja2 {{ }} syntax preserved       --#>
+<#-- ============================================= --#>
+
+button_card_templates:
+  << template_shared.button_card_template_chore_row_v1 >>
+  << template_shared.button_card_template_chore_row_kids_v1 >>
+views:
+  - max_columns: 4
+    title: << user.name >>
+    path: << user.slug >>
+    type: sections
+    sections:
+    - type: grid
+      column_span: 4
+      cards:
+        - square: false
+          type: grid
+          columns: 1
+          grid_options:
+            columns: full
+          cards:
+            - type: custom:auto-entities
+              card:
+                square: false
+                type: grid
+                columns: 1
+              card_param: cards
+              filter:
+                template: |-
+                  {#-- ===== WELCOME CARD ===== --#}
+
+                  << template_snippets.meta_stamp >>
+
+
+                  {#-- 1. User Configuration --#}
+
+                  << template_snippets.user_override_helper >>
+
+
+                  {#-- 2. Dynamic Lookups & Validations --#}
+
+                  << template_snippets.user_setup >>
+
+                  << template_snippets.user_validation >>
+
+                  {%- if not skip_render -%}
+
+                    {#-- 3. Collect Data --#}
+                    {%- set core_sensors = state_attr(dashboard_helper, 'core_sensors') or {} -%}
+                    {%- set gamification_enabled = state_attr(dashboard_helper, 'gamification_enabled') | default(false, true) -%}
+                    {%- set points_sensor = core_sensors.get('points_eid') -%}
+                    {%- set total_sensor = core_sensors.get('chores_eid') -%}
+                    {%- set highest_badge_entity = core_sensors.get('badges_eid') -%}
+                    {%- set translation_sensor = (state_attr(dashboard_helper, 'dashboard_helpers') or {}).get('translation_sensor_eid') -%}
+                    {%- set ui = state_attr(translation_sensor, 'ui_translations') if translation_sensor else {} -%}
+                    {%- set points = (states(points_sensor) | int(default=0)) if points_sensor else 0 -%}
+                    {%- set points_label = (state_attr(points_sensor, 'unit_of_measurement') if points_sensor else None) or 'Points' -%}
+                    {%- set points_icon = (state_attr(points_sensor, 'icon') if points_sensor else None) or 'mdi:star-circle' -%}
+                    {%- set points_multiplier = (state_attr(points_sensor, 'points_multiplier') | float(default=1)) if points_sensor else 1 -%}
+                    {%- set highest_badge = ((states(highest_badge_entity) if highest_badge_entity else 'None') or 'None') -%}
+                    {%- set highest_badge_icon = (state_attr(highest_badge_entity, 'icon') if highest_badge_entity else None) or 'mdi:medal-outline' -%}
+                    {%- set weekly_completed = (state_attr(total_sensor, 'chore_stat_approved_week') | int(default=0)) if total_sensor else 0 -%}
+                    {%- set todays_completed = (state_attr(total_sensor, 'chore_stat_approved_today') | int(default=0)) if total_sensor else 0 -%}
+                    {%- set overdue_now = (state_attr(total_sensor, 'chore_stat_current_overdue') | int(default=0)) if total_sensor else 0 -%}
+                    {%- set due_today_open = (state_attr(total_sensor, 'chore_stat_current_due_today') | int(default=0)) if total_sensor else 0 -%}
+
+                    {#-- 4. Build Display - essentials minimal --#}
+                    {%- set p_icon = points_icon | default('mdi:star', true) -%}
+                    {%- set multiplier_display = points_multiplier | int if points_multiplier == (points_multiplier | int) else points_multiplier -%}
+
+                    {%- set badge_pill = '' -%}
+                    {%- if highest_badge not in ['None', 'unknown', 'Unknown', 'unavailable'] -%}
+                      {%- set mult_text = " <span style='color: var(--warning-color);'>(x" ~ multiplier_display|string ~ ")</span>" if points_multiplier > 1 else '' -%}
+                      {%- set badge_pill = "<div style='margin-top: 7px; font-size: 12px; background: var(--secondary-background-color); padding: 4px 12px; border-radius: 14px; border: 1px solid var(--divider-color); display: inline-flex; align-items: center; justify-content: center;'><ha-icon icon='" ~ highest_badge_icon ~ "' style='width: 18px; height: 14px; margin-right: 5px; color: var(--warning-color);'></ha-icon><span style='font-weight: 600; color: var(--primary-text-color);'>" ~ highest_badge ~ mult_text ~ "</span></div>" -%}
+                    {%- endif -%}
+
+                    {%- set left_col =
+                      "<div style='text-align: left; flex-grow: 1; min-width: 0;'>"
+                      ~ "<div style='font-size: 18px; font-weight: 600; margin-bottom: 8px; line-height: 1.2;'>👋 " ~ ui.get('welcome', 'err-welcome') ~ ", " ~ name ~ "!</div>"
+                      ~ "<div style='font-size: 12px; color: var(--secondary-text-color); display: flex; flex-direction: column; gap: 5px; line-height: 1.15;'>"
+                      ~ "<div style='display: flex; flex-wrap: wrap; gap: 10px 18px;'>"
+                      ~ "<span style='display: inline-flex; align-items: center; white-space: nowrap; color: " ~ ('var(--error-color)' if overdue_now > 0 else 'var(--secondary-text-color)') ~ ";'><ha-icon icon='mdi:alert-octagon-outline' style='width: 14px; height: 14px; margin-right: 5px; transform: translateY(-1px);'></ha-icon>" ~ ui.get('overdue', 'err-overdue') ~ ": <b style='margin-left: 4px; color: " ~ ('var(--error-color)' if overdue_now > 0 else 'var(--primary-text-color)') ~ ";'>" ~ overdue_now ~ "</b></span>"
+                      ~ "<span style='display: inline-flex; align-items: center; white-space: nowrap; color: " ~ ('var(--warning-color)' if due_today_open > 0 else 'var(--secondary-text-color)') ~ ";'><ha-icon icon='mdi:calendar-clock' style='width: 14px; height: 14px; margin-right: 5px; transform: translateY(-1px);'></ha-icon>" ~ ui.get('due_today', 'err-due_today') ~ ": <b style='margin-left: 4px; color: " ~ ('var(--warning-color)' if due_today_open > 0 else 'var(--primary-text-color)') ~ ";'>" ~ due_today_open ~ "</b></span>"
+                      ~ "</div>"
+                      ~ "<div style='display: flex; flex-wrap: wrap; gap: 10px 18px;'>"
+                      ~ "<span style='display: inline-flex; align-items: center; white-space: nowrap;'><ha-icon icon='mdi:calendar-today' style='width: 14px; height: 14px; margin-right: 5px; transform: translateY(-1px);'></ha-icon>" ~ ui.get('todays_completed', 'err-todays_completed') ~ ": <b style='margin-left: 4px; color: var(--primary-text-color);'>" ~ todays_completed ~ "</b></span>"
+                      ~ "<span style='display: inline-flex; align-items: center; white-space: nowrap;'><ha-icon icon='mdi:calendar-week' style='width: 14px; height: 14px; margin-right: 5px; transform: translateY(-1px);'></ha-icon>" ~ ui.get('weekly_completed', 'err-weekly_completed') ~ ": <b style='margin-left: 4px; color: var(--primary-text-color);'>" ~ weekly_completed ~ "</b></span>"
+                      ~ "</div>"
+                      ~ "</div></div>"
+                    -%}
+
+                    {%- set right_col = "" -%}
+                    {%- if gamification_enabled -%}
+                      {%- set right_col =
+                        "<div style='text-align: right; flex-shrink: 0; display: flex; flex-direction: column; align-items: flex-end; margin-left: 14px;'>"
+                        ~ "<div style='display: inline-flex; align-items: center; color: var(--primary-color); font-size: 22px; font-weight: 800; line-height: 1;'><ha-icon icon='" ~ p_icon ~ "' style='width: 22px; height: 24px; margin-right: 6px; transform: translateY(-2px);'></ha-icon>" ~ points ~ "</div>"
+                        ~ "<div style='font-size: 10px; text-transform: uppercase; font-weight: 700; opacity: 0.7; margin-top: 4px; letter-spacing: 0.5px;'>" ~ points_label ~ "</div>"
+                        ~ badge_pill
+                        ~ "</div>"
+                      -%}
+                    {%- endif -%}
+
+                    {%- set content_html = "<div style='display: flex; justify-content: space-between; align-items: center; width: 100%; gap: 10px;'>" ~ left_col ~ right_col ~ "</div>" if gamification_enabled else left_col -%}
+
+                    {#-- 5. Render --#}
+                    {{
+                      {
+                        'type': 'custom:button-card',
+                        'entity': points_sensor if gamification_enabled and points_sensor else total_sensor,
+                        'show_name': false,
+                        'show_icon': false,
+                        'tap_action': {'action': 'more-info'},
+                        'styles': {
+                          'card': [
+                            {'padding': '16px 20px'},
+                            {'border-radius': '16px'},
+                            {'border': '1px solid var(--divider-color)'},
+                            {'background-color': 'var(--card-background-color)'},
+                            {'box-shadow': 'none'}
+                          ],
+                          'grid': [
+                            {'grid-template-areas': '"content"'},
+                            {'grid-template-columns': '1fr'}
+                          ],
+                          'custom_fields': {
+                            'content': [{'width': '100%'}]
+                          }
+                        },
+                        'custom_fields': {
+                          'content': content_html
+                        }
+                      }
+                    }},
+
+                  {%- endif -%}
+        - type: grid
+          square: false
+          columns: 1
+          grid_options:
+            columns: full
+          cards:
+            - type: custom:auto-entities
+              card:
+                square: false
+                type: grid
+                columns: 1
+              card_param: cards
+              filter:
+                template: |-
+                  {#-- ===== CHORES CARD ===== --#}
+
+                  << template_snippets.meta_stamp >>
+
+
+                  {#-- 1. User Configuration --#}
+
+                  << template_snippets.user_override_helper >>
+
+                  {%- set pref_chore_row_variant = 'standard' -%}
+
+                  {%- set pref_chore_engine_layout_mode = 'responsive' -%}
+
+                  {%- set pref_ui_control_key_root = 'chores' -%}
+
+                  {%- set pref_column_count_mobile_standard = 1 -%}
+
+                  {%- set pref_column_count_mobile_kids = 2 -%}
+
+                  {%- set pref_column_count_wide_standard = 3 -%}
+
+                  {%- set pref_column_count_wide_kids = 5 -%}
+
+                  {%- set pref_use_overdue_grouping = true -%}
+
+                  {%- set pref_use_today_grouping = true -%}
+
+                  {%- set pref_include_daily_recurring_in_today = true -%}
+
+                  {%- set pref_use_this_week_grouping = true -%}
+
+                  {%- set pref_include_weekly_recurring_in_this_week = true -%}
+
+                  {%- set pref_exclude_completed = false -%}
+
+                  {%- set pref_exclude_blocked = false -%}
+
+                  {%- set pref_exclude_states = [] -%}  {#-- Example: ['completed', 'completed_by_other', 'not_my_turn', 'missed'] --#}
+
+                  {%- set pref_use_label_grouping = false -%}
+
+                  {%- set pref_exclude_label_list = [] -%}  {#-- Example: ['junk_label', 'skip_this'] --#}
+
+                  {%- set pref_label_display_order = [] -%}  {#-- Example: ['Kitchen', 'Bedroom', 'Outdoor'] --#}
+
+                  {%- set pref_sort_within_groups = 'by_state_and_date' -%}  {#-- Options: 'default', 'name_asc', 'name_desc', 'date_asc', 'date_desc', 'by_state_and_date' --#}
+
+                  {%- set pref_show_chore_description = false -%}
+
+                  {%- set pref_default_header_collapsed = false -%}
+
+                  {%- set pref_primary_tint_mix_pct = 14 -%}  {#-- Percent of var(--primary-color) mixed into the main Chores header background when fill is enabled. Allowed: 0-100. --#}
+
+                  {%- set pref_show_header_background = true -%}  {#-- Set to false to remove the main Chores header background fill and leave it transparent. Allowed: true, false. --#}
+
+                  {%- set pref_show_header_thin_border = true -%}  {#-- Set to false to remove the thin outer border line. Accent borders are unaffected. Allowed: true, false. --#}
+
+
+                  {#-- 2. Dynamic Lookups & Validations --#}
+
+                  << template_snippets.user_setup >>
+
+                  << template_snippets.user_validation >>
+
+                  << template_shared.chore_engine/context_v1 >>
+
+                    << template_shared.chore_engine/prepare_groups_v1 >>
+
+                    << template_shared.chore_engine/header_v1 >>
+
+                    {%- if not header_collapsed -%}
+                      << template_shared.chore_engine/settings_panel_v1 >>
+
+                      << template_shared.chore_engine/group_render_v1 >>
+                    {%- endif -%}
+                  {%- endif -%}

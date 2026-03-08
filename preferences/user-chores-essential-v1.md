@@ -1,18 +1,18 @@
-# user-game-full-v1 preferences
+# user-chores-essential-v1 preferences
 
-`user-game-full-v1` is a modern full user layout that starts with the welcome + chores flow and reuses the production shared chore-row behavior.
+`user-chores-essential-v1` is a lightweight, chore-focused layout that keeps the strong grouping and filtering behavior from the earlier essentials path while using compact chore rows.
 
 ## Quick overview
 
-- Feature-complete chore UX: includes shared progress context, claim-mode nuance, overdue/missed context, and claim/approve/undo controls.
-- Modular shared-template architecture: core chore-row logic is sourced from `templates/shared/button_card_template_user_chores_row_v1.yaml` and composed into published runtime templates.
-- Portability note: copy from composed runtime templates (vendored output), not directly from shared fragment source files.
+- Lightweight by design: focuses on welcome + chores without adding extra dashboard complexity.
+- Portable: the chores card can be copied into other dashboard views as a drop-in block.
+- Portability note: this template is intentionally kept inline for easy copy/paste portability, but inline rendering can hit template-size limits at scale (commonly around ~25 chores, depending on data and labels). See [Known issues / limitations](#known-issues--limitations).
 - Friendly for drag-and-drop workflows: keep defaults for a simple setup, then tune behavior with `pref_*` values.
 - Supports practical organization controls (time buckets, labels, sorting, and state filtering).
 
 ## Card: Chores
 
-- `pref_column_count` (default: `1`)
+- `pref_column_count` (default: `3`)
   - Grid columns for chore cards.
   - Allowed: positive integer.
 
@@ -66,39 +66,9 @@
   - Sorting mode inside each rendered group.
   - Allowed: `default`, `name_asc`, `name_desc`, `date_asc`, `date_desc`, `by_state_and_date`.
 
-- `pref_show_chore_description` (default: `false`)
+- `pref_show_chore_description` (default: `true`)
   - Shows the optional description row when a chore has non-empty description text.
   - When `false`, the description row is always hidden.
-  - Allowed: `true`, `false`.
-
-## Card: Rewards
-
-- `pref_column_count` (default: `1`)
-  - Grid columns for reward cards.
-  - Allowed: positive integer.
-
-- `pref_use_label_grouping` (default: `false`)
-  - Groups rewards by label.
-  - When `false`, rewards render in a single group.
-  - Allowed: `true`, `false`.
-
-- `pref_exclude_label_list` (default: `[]`)
-  - Excludes rewards containing any listed labels.
-  - Works with or without label grouping enabled.
-  - Allowed: array of label strings.
-
-- `pref_label_display_order` (default: `[]`)
-  - Optional explicit label-group order when label grouping is enabled.
-  - Any labels not listed still appear afterward.
-  - Allowed: array of label strings.
-
-- `pref_sort_rewards` (default: `default`)
-  - Sorting mode inside each rendered reward group.
-  - Allowed: `default`, `name_asc`, `name_desc`, `cost_asc`, `cost_desc`.
-
-- `pref_show_reward_description` (default: `true`)
-  - Shows reward description as a dedicated row when description text exists.
-  - When `false`, description row is hidden even if reward has description.
   - Allowed: `true`, `false`.
 
 ## Practical tuning examples
@@ -107,5 +77,10 @@
 - Hide done chores: add `completed` to `pref_exclude_states` (for example `['completed']`).
 - Build a label board: set `pref_use_label_grouping: true` and define `pref_label_display_order`.
 - Prioritize urgent work: keep `pref_use_overdue_grouping: true` and use `pref_sort_within_groups: by_state_and_date`.
-- Sort rewards by price: set `pref_sort_rewards: cost_asc`.
-- Group rewards by labels: set `pref_use_label_grouping: true` and optionally define `pref_label_display_order`.
+
+## Known issues / limitations
+
+- Inline template rendering has a practical size ceiling. With richer chore metadata and labels, this layout can hit Home Assistant template output limits at around ~25 chores.
+- Typical runtime error when this limit is exceeded:
+  - `homeassistant.exceptions.TemplateError: Template output exceeded maximum size of 262144 characters`
+- If you encounter this, reduce rendered chore volume (for example by state/label filters) or move to different template profile.

@@ -1,0 +1,162 @@
+{#-- Type coercion for preferences --#}
+{%- set pref_chore_row_variant = (pref_chore_row_variant | default('standard') | string | lower) -%}
+{%- if pref_chore_row_variant not in ['standard', 'kids'] -%}
+  {%- set pref_chore_row_variant = 'standard' -%}
+{%- endif -%}
+{%- set pref_chore_engine_layout_mode = (pref_chore_engine_layout_mode | default('single') | string | lower) -%}
+{%- if pref_chore_engine_layout_mode not in ['single', 'responsive'] -%}
+  {%- set pref_chore_engine_layout_mode = 'single' -%}
+{%- endif -%}
+{%- if pref_chore_engine_layout_mode == 'responsive' -%}
+  {%- set pref_column_count_mobile_standard = pref_column_count_mobile_standard | int(default=1) -%}
+  {%- set pref_column_count_mobile_kids = pref_column_count_mobile_kids | int(default=2) -%}
+  {%- set pref_column_count_wide_standard = pref_column_count_wide_standard | int(default=3) -%}
+  {%- set pref_column_count_wide_kids = pref_column_count_wide_kids | int(default=5) -%}
+  {%- if pref_column_count_mobile_standard < 1 -%}
+    {%- set pref_column_count_mobile_standard = 1 -%}
+  {%- endif -%}
+  {%- if pref_column_count_mobile_kids < 1 -%}
+    {%- set pref_column_count_mobile_kids = 1 -%}
+  {%- endif -%}
+  {%- if pref_column_count_wide_standard < 1 -%}
+    {%- set pref_column_count_wide_standard = 1 -%}
+  {%- endif -%}
+  {%- if pref_column_count_wide_kids < 1 -%}
+    {%- set pref_column_count_wide_kids = 1 -%}
+  {%- endif -%}
+{%- else -%}
+  {%- set pref_column_count_standard = pref_column_count_standard | int(default=1) -%}
+  {%- set pref_column_count_kids = pref_column_count_kids | int(default=2) -%}
+  {%- if pref_column_count_standard < 1 -%}
+    {%- set pref_column_count_standard = 1 -%}
+  {%- endif -%}
+  {%- if pref_column_count_kids < 1 -%}
+    {%- set pref_column_count_kids = 1 -%}
+  {%- endif -%}
+{%- endif -%}
+{%- set pref_use_overdue_grouping = pref_use_overdue_grouping | default(true, true) -%}
+{%- set pref_use_today_grouping = pref_use_today_grouping | default(true, true) -%}
+{%- set pref_include_daily_recurring_in_today = pref_include_daily_recurring_in_today | default(true, true) -%}
+{%- set pref_use_this_week_grouping = pref_use_this_week_grouping | default(true, true) -%}
+{%- set pref_include_weekly_recurring_in_this_week = pref_include_weekly_recurring_in_this_week | default(true, true) -%}
+{%- set pref_exclude_completed = pref_exclude_completed | default(false, true) -%}
+{%- set pref_exclude_states = pref_exclude_states if pref_exclude_states is iterable else [] -%}
+{%- set pref_exclude_states = pref_exclude_states | map('lower') | list -%}
+{%- if pref_exclude_completed and 'completed' not in pref_exclude_states -%}
+  {%- set pref_exclude_states = pref_exclude_states + ['completed'] -%}
+{%- endif -%}
+{%- set pref_exclude_blocked = pref_exclude_blocked | default(false, true) -%}
+{%- if pref_exclude_blocked and 'completed_by_other' not in pref_exclude_states -%}
+  {%- set pref_exclude_states = pref_exclude_states + ['completed_by_other'] -%}
+{%- endif -%}
+{%- if pref_exclude_blocked and 'not_my_turn' not in pref_exclude_states -%}
+  {%- set pref_exclude_states = pref_exclude_states + ['not_my_turn'] -%}
+{%- endif -%}
+{%- if pref_exclude_blocked and 'missed' not in pref_exclude_states -%}
+  {%- set pref_exclude_states = pref_exclude_states + ['missed'] -%}
+{%- endif -%}
+{%- set pref_use_label_grouping = pref_use_label_grouping | default(false, true) -%}
+{%- set pref_exclude_label_list = pref_exclude_label_list if pref_exclude_label_list is iterable else [] -%}
+{%- set pref_label_display_order = pref_label_display_order if pref_label_display_order is iterable else [] -%}
+{%- if pref_sort_within_groups not in ['default', 'name_asc', 'name_desc', 'date_asc', 'date_desc', 'by_state_and_date'] -%}
+  {%- set pref_sort_within_groups = 'by_state_and_date' -%}
+{%- endif -%}
+{%- set pref_default_header_collapsed = (pref_default_header_collapsed | default('false') | string | lower) == 'true' -%}
+{%- set pref_primary_tint_mix_pct = pref_primary_tint_mix_pct | int(default=14) -%}
+{%- set pref_show_header_background = (pref_show_header_background | default('true') | string | lower) == 'true' -%}
+{%- set pref_show_header_thin_border = (pref_show_header_thin_border | default('true') | string | lower) == 'true' -%}
+{%- if pref_primary_tint_mix_pct < 0 -%}
+  {%- set pref_primary_tint_mix_pct = 0 -%}
+{%- elif pref_primary_tint_mix_pct > 100 -%}
+  {%- set pref_primary_tint_mix_pct = 100 -%}
+{%- endif -%}
+{%- set pref_ui_control_key_root = (pref_ui_control_key_root | default('chores') | string) -%}
+{%- set pref_ui_control_key_root_segments = pref_ui_control_key_root.split('/') | reject('equalto', '') | list -%}
+{%- if pref_ui_control_key_root_segments | length == 0 -%}
+  {%- set pref_ui_control_key_root_segments = ['chores'] -%}
+{%- endif -%}
+{%- set pref_ui_control_key_root = pref_ui_control_key_root_segments | join('/') -%}
+
+{%- if not skip_render -%}
+
+  {#-- 3. Initialize Variables --#}
+
+{%- set ns = namespace(
+  overdue_buttons=[],
+  am_buttons=[],
+  today_buttons=[],
+  this_week_buttons=[],
+  other_buttons=[],
+  label_button_groups=[],
+  label_order=[],
+  group_cards=[]
+) -%}
+
+  {#-- 4. Collect Data --#}
+  {%- set core_sensors = state_attr(dashboard_helper, 'core_sensors') or {} -%}
+  {%- set gamification_enabled = state_attr(dashboard_helper, 'gamification_enabled') | default(false, true) -%}
+  {%- set points_sensor = core_sensors.get('points_eid') -%}
+  {%- set translation_sensor = (state_attr(dashboard_helper, 'dashboard_helpers') or {}).get('translation_sensor_eid') -%}
+  {%- set ui = state_attr(translation_sensor, 'ui_translations') if translation_sensor else {} -%}
+  {%- set points_label = (state_attr(points_sensor, 'unit_of_measurement') if points_sensor else None) or 'Points' -%}
+  {%- set points_icon = (state_attr(points_sensor, 'icon') if points_sensor else None) or 'mdi:star-circle' -%}
+  {%- set ui_control = state_attr(dashboard_helper, 'ui_control') | default({}, true) -%}
+  {%- set ui_control_key_root = pref_ui_control_key_root -%}
+  {%- set ui_control_key_header_collapsed = ui_control_key_root ~ '/header_collapse' -%}
+  {%- set ui_control_key_settings_open = ui_control_key_root ~ '/settings_open' -%}
+  {%- set ui_control_key_row_variant = ui_control_key_root ~ '/row_variant' -%}
+  {%- set ui_control_key_exclude_completed = ui_control_key_root ~ '/exclude_completed' -%}
+  {%- set ui_control_key_exclude_blocked = ui_control_key_root ~ '/exclude_blocked' -%}
+  {%- set ui_control_key_sort_within_groups = ui_control_key_root ~ '/sort_within_groups' -%}
+  {%- set ui_root = namespace(current=ui_control if ui_control is mapping else {}) -%}
+  {%- for segment in ui_control_key_root.split('/') -%}
+    {%- if ui_root.current is mapping -%}
+      {%- set ui_root.current = ui_root.current.get(segment, {}) -%}
+    {%- else -%}
+      {%- set ui_root.current = {} -%}
+    {%- endif -%}
+  {%- endfor -%}
+  {%- set header_collapsed = ui_root.current['header_collapse'] if ui_root.current is mapping and 'header_collapse' in ui_root.current else pref_default_header_collapsed -%}
+  {%- set header_collapsed = (header_collapsed | string | lower) == 'true' -%}
+  {%- set settings_open = ui_root.current['settings_open'] if ui_root.current is mapping and 'settings_open' in ui_root.current else false -%}
+  {%- set settings_open = (settings_open | string | lower) == 'true' -%}
+  {%- set effective_row_variant = ui_root.current['row_variant'] if ui_root.current is mapping and 'row_variant' in ui_root.current else pref_chore_row_variant -%}
+  {%- set effective_row_variant = (effective_row_variant | default(pref_chore_row_variant) | string | lower) -%}
+  {%- if effective_row_variant not in ['standard', 'kids'] -%}
+    {%- set effective_row_variant = pref_chore_row_variant -%}
+  {%- endif -%}
+  {%- if pref_chore_engine_layout_mode == 'responsive' -%}
+    {%- set effective_column_count_mobile = pref_column_count_mobile_kids if effective_row_variant == 'kids' else pref_column_count_mobile_standard -%}
+    {%- set effective_column_count_wide = pref_column_count_wide_kids if effective_row_variant == 'kids' else pref_column_count_wide_standard -%}
+  {%- else -%}
+    {%- set effective_column_count = pref_column_count_kids if effective_row_variant == 'kids' else pref_column_count_standard -%}
+  {%- endif -%}
+  {%- set exclude_completed_effective = ui_root.current['exclude_completed'] if ui_root.current is mapping and 'exclude_completed' in ui_root.current else pref_exclude_completed -%}
+  {%- set exclude_completed_effective = (exclude_completed_effective | string | lower) == 'true' -%}
+  {%- set exclude_blocked_effective = ui_root.current['exclude_blocked'] if ui_root.current is mapping and 'exclude_blocked' in ui_root.current else pref_exclude_blocked -%}
+  {%- set exclude_blocked_effective = (exclude_blocked_effective | string | lower) == 'true' -%}
+  {%- set effective_sort_within_groups = ui_root.current['sort_within_groups'] if ui_root.current is mapping and 'sort_within_groups' in ui_root.current else pref_sort_within_groups -%}
+  {%- set effective_sort_within_groups = (effective_sort_within_groups | default(pref_sort_within_groups) | string | lower) -%}
+  {%- if effective_sort_within_groups not in ['default', 'name_asc', 'name_desc', 'date_asc', 'date_desc', 'by_state_and_date'] -%}
+    {%- set effective_sort_within_groups = pref_sort_within_groups -%}
+  {%- endif -%}
+  {%- set next_sort_within_groups = 'default' if effective_sort_within_groups == 'by_state_and_date' else 'name_asc' if effective_sort_within_groups == 'default' else 'name_desc' if effective_sort_within_groups == 'name_asc' else 'date_asc' if effective_sort_within_groups == 'name_desc' else 'date_desc' if effective_sort_within_groups == 'date_asc' else 'by_state_and_date' -%}
+  {%- set sort_mode_label_key = 'sort_mode_default' if effective_sort_within_groups == 'default' else 'sort_mode_name_asc' if effective_sort_within_groups == 'name_asc' else 'sort_mode_name_desc' if effective_sort_within_groups == 'name_desc' else 'sort_mode_date_asc' if effective_sort_within_groups == 'date_asc' else 'sort_mode_date_desc' if effective_sort_within_groups == 'date_desc' else 'sort_mode_by_state_and_date' -%}
+  {%- set effective_exclude_states = pref_exclude_states | reject('equalto', 'completed') | reject('equalto', 'completed_by_other') | reject('equalto', 'not_my_turn') | reject('equalto', 'missed') | list -%}
+  {%- if exclude_completed_effective and 'completed' not in effective_exclude_states -%}
+    {%- set effective_exclude_states = effective_exclude_states + ['completed'] -%}
+  {%- endif -%}
+  {%- if exclude_blocked_effective and 'completed_by_other' not in effective_exclude_states -%}
+    {%- set effective_exclude_states = effective_exclude_states + ['completed_by_other'] -%}
+  {%- endif -%}
+  {%- if exclude_blocked_effective and 'not_my_turn' not in effective_exclude_states -%}
+    {%- set effective_exclude_states = effective_exclude_states + ['not_my_turn'] -%}
+  {%- endif -%}
+  {%- if exclude_blocked_effective and 'missed' not in effective_exclude_states -%}
+    {%- set effective_exclude_states = effective_exclude_states + ['missed'] -%}
+  {%- endif -%}
+  {%- set chore_row_template_name = 'chore_row_kids_v1' if effective_row_variant == 'kids' else 'chore_row_v1' -%}
+  {%- set integration_entry_id = state_attr(dashboard_helper, 'integration_entry_id') -%}
+  {%- set dashboard_helper_user_id = state_attr(dashboard_helper, 'user_id') -%}
+  {%- set chore_list = state_attr(dashboard_helper, 'chores') | default([], true) -%}
+  {%- set chores_by_label_raw = state_attr(dashboard_helper, 'chores_by_label') | default({}, true) -%}

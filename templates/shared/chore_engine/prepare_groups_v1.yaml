@@ -1,0 +1,204 @@
+{#-- 5. Build Display --#}
+{%- for chore in chore_list -%}
+	{%- set chore_sensor_id = chore.eid if chore is mapping else chore -%}
+	{%- set chore_status = chore.state if chore is mapping else states(chore_sensor_id) -%}
+	{%- set chore_labels = chore.labels if chore is mapping else state_attr(chore_sensor_id, 'labels') | default([], true) -%}
+	{%- set chore_primary_group = chore.primary_group if chore is mapping else state_attr(chore_sensor_id, 'primary_group') | default('other') -%}
+	{%- set chore_is_today_am = chore.is_today_am if chore is mapping else state_attr(chore_sensor_id, 'is_today_am') -%}
+
+	{#-- Step 1: Skip if chore labels match exclude list --#}
+	{%- if not (chore_labels | select('in', pref_exclude_label_list) | list | count > 0) -%}
+
+		{#-- Step 2: Skip chores by excluded states preference --#}
+		{%- if chore_status in effective_exclude_states -%}
+			{#-- Skip this chore --#}
+
+		{#-- Step 3: Handle overdue chores (highest priority) --#}
+		{%- elif chore_status == 'overdue' and pref_use_overdue_grouping -%}
+			{%- set ns.overdue_buttons = ns.overdue_buttons + [chore_sensor_id] -%}
+
+		{#-- Step 4: Skip chores with labels when label grouping is enabled (they're processed separately) --#}
+		{%- elif pref_use_label_grouping and (chore_labels | default([], true) | list | length > 0) -%}
+			{#-- Labels take priority; processed in label grouping section below --#}
+
+		{#-- Step 5: Handle recurring filters BEFORE primary_group logic (override primary_group assignment) --#}
+		{#-- If a chore is in 'today' group without specific date, it's daily recurring --#}
+		{%- elif chore_primary_group == 'today' and not pref_include_daily_recurring_in_today -%}
+			{%- set ns.other_buttons = ns.other_buttons + [chore_sensor_id] -%}
+
+		{#-- If a chore is in 'this_week' group without specific date, it's weekly recurring --#}
+		{%- elif chore_primary_group == 'this_week' and not pref_include_weekly_recurring_in_this_week -%}
+			{%- set ns.other_buttons = ns.other_buttons + [chore_sensor_id] -%}
+
+		{#-- Step 6: Categorize by primary_group (time-based) --#}
+		{%- elif chore_primary_group == 'today' and pref_use_today_grouping and chore_is_today_am == true -%}
+			{%- set ns.am_buttons = ns.am_buttons + [chore_sensor_id] -%}
+
+		{%- elif chore_primary_group == 'today' and pref_use_today_grouping and chore_is_today_am != true -%}
+			{%- set ns.today_buttons = ns.today_buttons + [chore_sensor_id] -%}
+
+		{%- elif chore_primary_group == 'today' and not pref_use_today_grouping -%}
+			{%- set ns.other_buttons = ns.other_buttons + [chore_sensor_id] -%}
+
+		{%- elif chore_primary_group == 'this_week' and pref_use_this_week_grouping -%}
+			{%- set ns.this_week_buttons = ns.this_week_buttons + [chore_sensor_id] -%}
+
+		{%- elif chore_primary_group == 'this_week' and not pref_use_this_week_grouping -%}
+			{%- set ns.other_buttons = ns.other_buttons + [chore_sensor_id] -%}
+
+		{#-- Step 7: Default fallback --#}
+		{%- else -%}
+			{%- set ns.other_buttons = ns.other_buttons + [chore_sensor_id] -%}
+		{%- endif -%}
+
+	{%- endif -%}
+{%- endfor -%}
+
+{#-- Build Label Groups from chores_by_label --#}
+{%- if pref_use_label_grouping -%}
+	{#-- Determine label order: use pref_label_display_order if provided, else all labels alphabetically --#}
+	{%- if pref_label_display_order | length > 0 -%}
+		{%- set ns.label_order = pref_label_display_order -%}
+	{%- else -%}
+		{%- set ns.label_order = chores_by_label_raw.keys() | list | sort -%}
+	{%- endif -%}
+
+	{#-- Build label button groups in order --#}
+	{%- for label in ns.label_order -%}
+		{%- if label not in pref_exclude_label_list and label in chores_by_label_raw -%}
+			{%- set label_eids = chores_by_label_raw[label] | default([], true) -%}
+			{%- set ns.temp_label_buttons = [] -%}
+			{%- for eid in label_eids -%}
+				{%- if eid not in (ns.overdue_buttons | list) -%}
+					{%- set ns.temp_label_buttons = ns.temp_label_buttons + [eid] -%}
+				{%- endif -%}
+			{%- endfor -%}
+			{%- if ns.temp_label_buttons | length > 0 -%}
+				{%- set ns.label_button_groups = ns.label_button_groups + [{'name': label, 'buttons': ns.temp_label_buttons, 'icon': 'mdi:label'}] -%}
+			{%- endif -%}
+		{%- endif -%}
+	{%- endfor -%}
+
+	{#-- Add any remaining labels not in pref_label_display_order (alphabetically sorted) --#}
+	{%- if pref_label_display_order | length > 0 -%}
+		{%- set remaining_labels = chores_by_label_raw.keys() | list | sort | reject('in', pref_label_display_order) | list -%}
+		{%- for label in remaining_labels -%}
+			{%- if label not in pref_exclude_label_list -%}
+				{%- set label_eids = chores_by_label_raw[label] | default([], true) -%}
+				{%- set ns.temp_label_buttons = [] -%}
+				{%- for eid in label_eids -%}
+					{%- if eid not in (ns.overdue_buttons | list) -%}
+						{%- set ns.temp_label_buttons = ns.temp_label_buttons + [eid] -%}
+					{%- endif -%}
+				{%- endfor -%}
+				{%- if ns.temp_label_buttons | length > 0 -%}
+					{%- set ns.label_button_groups = ns.label_button_groups + [{'name': label, 'buttons': ns.temp_label_buttons, 'icon': 'mdi:label'}] -%}
+				{%- endif -%}
+			{%- endif -%}
+		{%- endfor -%}
+	{%- endif -%}
+{%- endif -%}
+
+{#-- Build the button groups --#}
+{%- set button_groups = [
+		{'name': "!!!!!!!!!!! " ~ ui.get('overdue', 'err-overdue') ~ " !!!!!!!!!!!", 'buttons': ns.overdue_buttons, 'icon': 'mdi:alert-octagon'},
+		{'name': ui.get('due_this_morning', 'err-due_this_morning'), 'buttons': ns.am_buttons, 'icon': 'mdi:alarm'},
+		{'name': ui.get('due_today', 'err-due_today'), 'buttons': ns.today_buttons, 'icon': 'mdi:calendar-today'},
+		{'name': ui.get('due_this_week', 'err-due_this_week'), 'buttons': ns.this_week_buttons, 'icon': 'mdi:calendar-week'}
+] -%}
+
+{#-- Insert label-based groups --#}
+{%- set button_groups = button_groups + ns.label_button_groups -%}
+
+{#-- Continue with bonus group --#}
+{%- set button_groups = button_groups + [
+		{'name': ui.get('upcoming_bonus', 'err-upcoming_bonus'), 'buttons': ns.other_buttons, 'icon': 'mdi:calendar-clock'}
+] -%}
+
+{#-- Sort chores within each group based on preference --#}
+{%- if effective_sort_within_groups != 'default' -%}
+	{%- set ns.sorted_groups = [] -%}
+	{%- for group in button_groups -%}
+		{%- if group.buttons | length > 0 -%}
+			{%- if effective_sort_within_groups in ['name_asc', 'name_desc'] -%}
+				{#-- Build list of (name, eid) tuples for sorting --#}
+				{%- set ns.temp_list = [] -%}
+				{%- for eid in group.buttons -%}
+					{%- set chore_name = state_attr(eid, 'chore_name') | default('zzz', true) | lower -%}
+					{%- set ns.temp_list = ns.temp_list + [[chore_name, eid]] -%}
+				{%- endfor -%}
+				{#-- Sort the list --#}
+				{%- set sorted_list = ns.temp_list | sort -%}
+				{%- if effective_sort_within_groups == 'name_desc' -%}
+					{%- set sorted_list = sorted_list | reverse | list -%}
+				{%- endif -%}
+				{#-- Extract just the entity IDs --#}
+				{%- set sorted_buttons = sorted_list | map('last') | list -%}
+				{%- set ns.sorted_groups = ns.sorted_groups + [{'name': group.name, 'buttons': sorted_buttons, 'icon': group.icon}] -%}
+			{%- elif effective_sort_within_groups in ['date_asc', 'date_desc'] -%}
+				{#-- Build list of (due_date_timestamp, eid) tuples for sorting --#}
+				{%- set ns.temp_list = [] -%}
+				{%- for eid in group.buttons -%}
+					{%- set due_date_value = state_attr(eid, 'due_date') -%}
+					{%- if due_date_value is not none and due_date_value not in ['unknown', 'unavailable'] -%}
+						{%- set due_timestamp = as_timestamp(due_date_value) | default(9999999999, true) -%}
+					{%- else -%}
+						{%- set due_timestamp = 9999999999 -%}
+					{%- endif -%}
+					{%- set ns.temp_list = ns.temp_list + [[due_timestamp, eid]] -%}
+				{%- endfor -%}
+				{#-- Sort the list --#}
+				{%- set sorted_list = ns.temp_list | sort -%}
+				{%- if effective_sort_within_groups == 'date_desc' -%}
+					{%- set sorted_list = sorted_list | reverse | list -%}
+				{%- endif -%}
+				{#-- Extract just the entity IDs --#}
+				{%- set sorted_buttons = sorted_list | map('last') | list -%}
+				{%- set ns.sorted_groups = ns.sorted_groups + [{'name': group.name, 'buttons': sorted_buttons, 'icon': group.icon}] -%}
+			{%- elif effective_sort_within_groups == 'by_state_and_date' -%}
+				{#-- Actionability sort: overdue, due, pending, waiting, claimed, completed, completed_by_other, not_my_turn, missed --#}
+				{%- set ns.temp_list = [] -%}
+				{%- for eid in group.buttons -%}
+					{%- set chore_state = states(eid) | lower -%}
+					{%- if chore_state == 'overdue' -%}
+						{%- set state_priority = 0 -%}
+					{%- elif chore_state == 'due' -%}
+						{%- set state_priority = 1 -%}
+					{%- elif chore_state == 'pending' -%}
+						{%- set state_priority = 2 -%}
+					{%- elif chore_state == 'waiting' -%}
+						{%- set state_priority = 3 -%}
+					{%- elif chore_state == 'claimed' -%}
+						{%- set state_priority = 4 -%}
+					{%- elif chore_state in ['completed', 'approved'] -%}
+						{%- set state_priority = 5 -%}
+					{%- elif chore_state == 'completed_by_other' -%}
+						{%- set state_priority = 6 -%}
+					{%- elif chore_state == 'not_my_turn' -%}
+						{%- set state_priority = 7 -%}
+					{%- elif chore_state == 'missed' -%}
+						{%- set state_priority = 8 -%}
+					{%- else -%}
+						{%- set state_priority = 50 -%}
+					{%- endif -%}
+					{%- set due_date_value = state_attr(eid, 'due_date') -%}
+					{%- if due_date_value is not none and due_date_value not in ['unknown', 'unavailable'] -%}
+						{%- set due_timestamp = as_timestamp(due_date_value) | default(9999999999, true) -%}
+					{%- else -%}
+						{%- set due_timestamp = 9999999999 -%}
+					{%- endif -%}
+					{%- set chore_name = state_attr(eid, 'chore_name') | default('zzz', true) | lower -%}
+					{%- set ns.temp_list = ns.temp_list + [[state_priority, due_timestamp, chore_name, eid]] -%}
+				{%- endfor -%}
+				{%- set sorted_list = ns.temp_list | sort -%}
+				{%- set sorted_buttons = sorted_list | map('last') | list -%}
+				{%- set ns.sorted_groups = ns.sorted_groups + [{'name': group.name, 'buttons': sorted_buttons, 'icon': group.icon}] -%}
+			{%- else -%}
+				{%- set ns.sorted_groups = ns.sorted_groups + [group] -%}
+			{%- endif -%}
+		{%- else -%}
+			{%- set ns.sorted_groups = ns.sorted_groups + [group] -%}
+		{%- endif -%}
+	{%- endfor -%}
+	{%- set button_groups = ns.sorted_groups -%}
+{%- endif -%}

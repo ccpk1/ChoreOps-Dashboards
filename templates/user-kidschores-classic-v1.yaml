@@ -1157,11 +1157,12 @@ views:
                       {%- set threshold_val = state_attr(badge_eid, 'threshold_value') | float(default=0) -%}
                     {%- endif -%}
 
-                    {%- set awards_data = state_attr(badge_eid, 'awards') -%}
-                    {%- set award_items_list = [] -%}
-                    {%- if awards_data is iterable and awards_data is not string and awards_data is not none -%}
-                      {%- set award_items_list = awards_data -%}
-                    {%- endif -%}
+                    {%- set awards_data = state_attr(badge_eid, 'awards') if state_attr(badge_eid, 'awards') is mapping else {} -%}
+                    {%- set award_points = awards_data.get('award_points', 0) | float(default=0) -%}
+                    {%- set points_multiplier = awards_data.get('points_multiplier', 0) | float(default=0) -%}
+                    {%- set award_rewards = awards_data.get('rewards') if awards_data.get('rewards') is iterable and awards_data.get('rewards') is not string else [] -%}
+                    {%- set award_bonuses = awards_data.get('bonuses') if awards_data.get('bonuses') is iterable and awards_data.get('bonuses') is not string else [] -%}
+                    {%- set award_penalties = awards_data.get('penalties') if awards_data.get('penalties') is iterable and awards_data.get('penalties') is not string else [] -%}
 
                     {%- set raw_earned = state_attr(badge_eid, 'assignees_earned') -%}
                     {%- set earned_list = [] -%}
@@ -1178,7 +1179,11 @@ views:
                       'description': state_attr(badge_eid, 'description') | default(''),
                       'type': ui.get('cumulative', 'err-cumulative'),
                       'threshold': threshold_val,
-                      'award_items': award_items_list,
+                      'award_points': award_points,
+                      'points_multiplier': points_multiplier,
+                      'award_rewards': award_rewards,
+                      'award_bonuses': award_bonuses,
+                      'award_penalties': award_penalties,
                       'assignees_earned': earned_list,
                       'maintenance': maintenance_points,
                       'role': entry.role,
@@ -1238,8 +1243,24 @@ views:
                   {%- set content = content ~ "🎯 **" ~ ui.get('threshold', 'err-threshold') ~ ":** " ~ badge.threshold|int ~ " " ~ ns.points_label ~ "  \n" -%}
 
                   {#-- AWARDS SECTION --#}
-                  {%- if badge.award_items | length > 0 -%}
-                      {%- set content = content ~ "💎 **" ~ ui.get('awards', 'err-awards') ~ ":** " ~ badge.award_items | join(', ') ~ "  \n" -%}
+                    {%- set awards_parts = [] -%}
+                    {%- if badge.points_multiplier > 0 -%}
+                      {%- set awards_parts = awards_parts + ['x' ~ ('%.2f' | format(badge.points_multiplier) | regex_replace('\.?0+$', ''))] -%}
+                    {%- endif -%}
+                    {%- if badge.award_points > 0 -%}
+                      {%- set awards_parts = awards_parts + [('%.1f' | format(badge.award_points)) ~ ' ' ~ ns.points_label] -%}
+                    {%- endif -%}
+                    {%- if badge.award_bonuses | length > 0 -%}
+                      {%- set awards_parts = awards_parts + [ui.get('bonus', 'err-bonus') ~ (' x' ~ (badge.award_bonuses | length) | string if badge.award_bonuses | length > 1 else '')] -%}
+                    {%- endif -%}
+                    {%- if badge.award_rewards | length > 0 -%}
+                      {%- set awards_parts = awards_parts + [ui.get('reward', 'err-reward') ~ (' x' ~ (badge.award_rewards | length) | string if badge.award_rewards | length > 1 else '')] -%}
+                    {%- endif -%}
+                    {%- if badge.award_penalties | length > 0 -%}
+                      {%- set awards_parts = awards_parts + [ui.get('penalty', 'err-penalty') ~ (' x' ~ (badge.award_penalties | length) | string if badge.award_penalties | length > 1 else '')] -%}
+                    {%- endif -%}
+                    {%- if awards_parts | length > 0 -%}
+                      {%- set content = content ~ "💎 **" ~ ui.get('awards', 'err-awards') ~ ":** " ~ awards_parts | join(', ') ~ "  \n" -%}
                   {%- endif -%}
 
                   {#-- MIDDLE: LIVE MAINTENANCE (Only for Highest Earned Badge) --#}

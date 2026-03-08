@@ -1,6 +1,6 @@
-# user-gamification-v1 preferences
+# user-kidschores-classic-v1 preferences
 
-This template has multiple cards with configurable `pref_*` values.
+`user-kidschores-classic-v1` is the classic kid-focused user layout. It keeps the original multi-card structure with configurable `pref_*` values.
 
 ## Card: Chores
 

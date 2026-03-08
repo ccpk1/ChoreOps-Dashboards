@@ -43,15 +43,19 @@ Issue routing:
 
 The current manifest uses versioned, immutable template IDs:
 
-- `user-gamification-v1` → `templates/user-gamification-v1.yaml`
-- `user-minimal-v1` → `templates/user-minimal-v1.yaml`
+- `user-chores-essential-v1` → `templates/user-chores-essential-v1.yaml`
+- `user-chores-standard-v1` → `templates/user-chores-standard-v1.yaml`
+- `user-gamification-premier-v1` → `templates/user-gamification-premier-v1.yaml`
+- `user-kidschores-classic-v1` → `templates/user-kidschores-classic-v1.yaml`
 - `admin-shared-v1` → `templates/admin-shared-v1.yaml`
 - `admin-peruser-v1` → `templates/admin-peruser-v1.yaml`
 
 Matching preference docs:
 
-- `preferences/user-gamification-v1.md`
-- `preferences/user-minimal-v1.md`
+- `preferences/user-chores-essential-v1.md`
+- `preferences/user-chores-standard-v1.md`
+- `preferences/user-gamification-premier-v1.md`
+- `preferences/user-kidschores-classic-v1.md`
 - `preferences/admin-shared-v1.md`
 - `preferences/admin-peruser-v1.md`
 

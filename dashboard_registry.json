@@ -6,73 +6,9 @@
   "description": "Registry manifest for ChoreOps dashboard templates",
   "templates": [
     {
-      "template_id": "user-gamification-v1",
-      "display_name": "Gamification (User)",
-      "description": "Full user dashboard with gamification cards and advanced sections",
-      "audience": "user",
-      "category": "full",
-      "lifecycle_state": "active",
-      "min_integration_version": "0.5.0-beta.5",
-      "maintainer": "ccpk1",
-      "source": {
-        "type": "vendored",
-        "path": "templates/user-gamification-v1.yaml"
-      },
-      "dependencies": {
-        "required": [
-          {
-            "id": "ha-card:auto-entities",
-            "name": "Auto-Entities",
-            "url": "https://github.com/thomasloven/lovelace-auto-entities"
-          },
-          {
-            "id": "ha-card:mushroom-template-card",
-            "name": "Mushroom Cards",
-            "url": "https://github.com/piitaya/lovelace-mushroom"
-          }
-        ],
-        "recommended": []
-      },
-      "preferences": {
-        "doc_asset_path": "preferences/user-gamification-v1.md"
-      }
-    },
-    {
-      "template_id": "user-minimal-v1",
-      "display_name": "Minimal (User)",
-      "description": "Minimal user dashboard with core cards only",
-      "audience": "user",
-      "category": "minimal",
-      "lifecycle_state": "active",
-      "min_integration_version": "0.5.0",
-      "maintainer": "ccpk1",
-      "source": {
-        "type": "vendored",
-        "path": "templates/user-minimal-v1.yaml"
-      },
-      "dependencies": {
-        "required": [
-          {
-            "id": "ha-card:auto-entities",
-            "name": "Auto-Entities",
-            "url": "https://github.com/thomasloven/lovelace-auto-entities"
-          },
-          {
-            "id": "ha-card:mushroom-template-card",
-            "name": "Mushroom Cards",
-            "url": "https://github.com/piitaya/lovelace-mushroom"
-          }
-        ],
-        "recommended": []
-      },
-      "preferences": {
-        "doc_asset_path": "preferences/user-minimal-v1.md"
-      }
-    },
-    {
-      "template_id": "user-chore-essentials-v1",
-      "display_name": "Chore Essentials (User)",
-      "description": "Lightweight user dashboard focused on welcome and chore management with compact button-card rows",
+      "template_id": "user-chores-standard-v1",
+      "display_name": "Chores Standard",
+      "description": "Default user dashboard focused on welcome and chores with full production chore-row UX, plus standard or kids row variants from one template",
       "audience": "user",
       "category": "minimal",
       "lifecycle_state": "active",
@@ -80,43 +16,17 @@
       "maintainer": "ccpk1",
       "source": {
         "type": "vendored",
-        "path": "templates/user-chore-essentials-v1.yaml"
-      },
-      "dependencies": {
-        "required": [
-          {
-            "id": "ha-card:auto-entities",
-            "name": "Auto-Entities",
-            "url": "https://github.com/thomasloven/lovelace-auto-entities"
-          },
-          {
-            "id": "ha-card:button-card",
-            "name": "Button Card",
-            "url": "https://github.com/custom-cards/button-card"
-          }
-        ],
-        "recommended": []
-      },
-      "preferences": {
-        "doc_asset_path": "preferences/user-chore-essentials-v1.md"
-      }
-    },
-    {
-      "template_id": "user-kids-chores-v1",
-      "display_name": "Kids Chores (User)",
-      "description": "Kid-focused chores dashboard with larger, friendlier chore tiles and simplified interactions",
-      "audience": "user",
-      "category": "minimal",
-      "lifecycle_state": "active",
-      "min_integration_version": "0.5.0-beta.5",
-      "maintainer": "ccpk1",
-      "source": {
-        "type": "vendored",
-        "path": "templates/user-kids-chores-v1.yaml"
+        "path": "templates/user-chores-standard-v1.yaml"
       },
       "shared_contract_version": 1,
       "shared_fragments_required": [
-        "button_card_template_user_kids_chores_row_v1"
+        "chore_engine/context_v1",
+        "chore_engine/prepare_groups_v1",
+        "chore_engine/header_v1",
+        "chore_engine/settings_panel_v1",
+        "chore_engine/group_render_v1",
+        "button_card_template_chore_row_v1",
+        "button_card_template_chore_row_kids_v1"
       ],
       "shared_fragments_optional": [],
       "dependencies": {
@@ -135,13 +45,13 @@
         "recommended": []
       },
       "preferences": {
-        "doc_asset_path": "preferences/user-kids-chores-v1.md"
+        "doc_asset_path": "preferences/user-chores-standard-v1.md"
       }
     },
     {
-      "template_id": "user-chores-v1",
-      "display_name": "Chores (User)",
-      "description": "User dashboard focused on welcome and chores with full production chore-row UX and claim-mode nuance",
+      "template_id": "user-chores-essential-v1",
+      "display_name": "Chores Essential",
+      "description": "Lightweight user dashboard focused on welcome and chore management with compact button-card rows",
       "audience": "user",
       "category": "minimal",
       "lifecycle_state": "active",
@@ -149,11 +59,8 @@
       "maintainer": "ccpk1",
       "source": {
         "type": "vendored",
-        "path": "templates/user-chores-v1.yaml"
+        "path": "templates/user-chores-essential-v1.yaml"
       },
-      "shared_contract_version": 1,
-      "shared_fragments_required": ["button_card_template_user_chores_row_v1"],
-      "shared_fragments_optional": [],
       "dependencies": {
         "required": [
           {
@@ -170,13 +77,13 @@
         "recommended": []
       },
       "preferences": {
-        "doc_asset_path": "preferences/user-chores-v1.md"
+        "doc_asset_path": "preferences/user-chores-essential-v1.md"
       }
     },
     {
-      "template_id": "user-game-full-v1",
-      "display_name": "Game Full (User)",
-      "description": "Modern full user dashboard flow using button-card design and shared production chore-row behavior",
+      "template_id": "user-gamification-premier-v1",
+      "display_name": "Gamification Premier",
+      "description": "Premier full user dashboard with rewards, badges, and shared production chore-row behavior",
       "audience": "user",
       "category": "full",
       "lifecycle_state": "active",
@@ -184,10 +91,18 @@
       "maintainer": "ccpk1",
       "source": {
         "type": "vendored",
-        "path": "templates/user-game-full-v1.yaml"
+        "path": "templates/user-gamification-premier-v1.yaml"
       },
       "shared_contract_version": 1,
-      "shared_fragments_required": ["button_card_template_user_chores_row_v1"],
+      "shared_fragments_required": [
+        "chore_engine/context_v1",
+        "chore_engine/prepare_groups_v1",
+        "chore_engine/header_v1",
+        "chore_engine/settings_panel_v1",
+        "chore_engine/group_render_v1",
+        "button_card_template_chore_row_v1",
+        "button_card_template_chore_row_kids_v1"
+      ],
       "shared_fragments_optional": [],
       "dependencies": {
         "required": [
@@ -205,7 +120,39 @@
         "recommended": []
       },
       "preferences": {
-        "doc_asset_path": "preferences/user-game-full-v1.md"
+        "doc_asset_path": "preferences/user-gamification-premier-v1.md"
+      }
+    },
+    {
+      "template_id": "user-kidschores-classic-v1",
+      "display_name": "KidsChores Classic",
+      "description": "Classic kid-focused user dashboard with chore, rewards, and showcase sections",
+      "audience": "user",
+      "category": "full",
+      "lifecycle_state": "active",
+      "min_integration_version": "0.5.0-beta.5",
+      "maintainer": "ccpk1",
+      "source": {
+        "type": "vendored",
+        "path": "templates/user-kidschores-classic-v1.yaml"
+      },
+      "dependencies": {
+        "required": [
+          {
+            "id": "ha-card:auto-entities",
+            "name": "Auto-Entities",
+            "url": "https://github.com/thomasloven/lovelace-auto-entities"
+          },
+          {
+            "id": "ha-card:mushroom-template-card",
+            "name": "Mushroom Cards",
+            "url": "https://github.com/piitaya/lovelace-mushroom"
+          }
+        ],
+        "recommended": []
+      },
+      "preferences": {
+        "doc_asset_path": "preferences/user-kidschores-classic-v1.md"
       }
     },
     {
