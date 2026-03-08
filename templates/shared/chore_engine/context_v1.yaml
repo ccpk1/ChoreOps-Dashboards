@@ -7,6 +7,14 @@
 {%- if pref_chore_engine_layout_mode not in ['single', 'responsive'] -%}
   {%- set pref_chore_engine_layout_mode = 'single' -%}
 {%- endif -%}
+{%- set pref_settings_column_count_mobile = pref_settings_column_count_mobile | int(default=3) -%}
+{%- set pref_settings_column_count_wide = pref_settings_column_count_wide | int(default=10) -%}
+{%- if pref_settings_column_count_mobile < 1 -%}
+  {%- set pref_settings_column_count_mobile = 1 -%}
+{%- endif -%}
+{%- if pref_settings_column_count_wide < 1 -%}
+  {%- set pref_settings_column_count_wide = 1 -%}
+{%- endif -%}
 {%- if pref_chore_engine_layout_mode == 'responsive' -%}
   {%- set pref_column_count_mobile_standard = pref_column_count_mobile_standard | int(default=1) -%}
   {%- set pref_column_count_mobile_kids = pref_column_count_mobile_kids | int(default=2) -%}
@@ -34,18 +42,23 @@
     {%- set pref_column_count_kids = 1 -%}
   {%- endif -%}
 {%- endif -%}
-{%- set pref_use_overdue_grouping = pref_use_overdue_grouping | default(true, true) -%}
-{%- set pref_use_today_grouping = pref_use_today_grouping | default(true, true) -%}
-{%- set pref_include_daily_recurring_in_today = pref_include_daily_recurring_in_today | default(true, true) -%}
-{%- set pref_use_this_week_grouping = pref_use_this_week_grouping | default(true, true) -%}
-{%- set pref_include_weekly_recurring_in_this_week = pref_include_weekly_recurring_in_this_week | default(true, true) -%}
-{%- set pref_exclude_completed = pref_exclude_completed | default(false, true) -%}
-{%- set pref_exclude_states = pref_exclude_states if pref_exclude_states is iterable else [] -%}
+{%- set pref_use_overdue_grouping = (pref_use_overdue_grouping | default(true, true) | string | lower) == 'true' -%}
+{%- set pref_use_today_grouping = (pref_use_today_grouping | default(true, true) | string | lower) == 'true' -%}
+{%- set pref_use_today_am_grouping = (pref_use_today_am_grouping | default(true, true) | string | lower) == 'true' -%}
+{%- set pref_today_grouping_mode = (pref_today_grouping_mode | default('', true) | string | lower) -%}
+{%- if pref_today_grouping_mode not in ['off', 'today', 'today_morning'] -%}
+  {%- set pref_today_grouping_mode = 'today_morning' if pref_use_today_am_grouping else 'today' if pref_use_today_grouping else 'off' -%}
+{%- endif -%}
+{%- set pref_include_daily_recurring_in_today = (pref_include_daily_recurring_in_today | default(true, true) | string | lower) == 'true' -%}
+{%- set pref_use_this_week_grouping = (pref_use_this_week_grouping | default(true, true) | string | lower) == 'true' -%}
+{%- set pref_include_weekly_recurring_in_this_week = (pref_include_weekly_recurring_in_this_week | default(true, true) | string | lower) == 'true' -%}
+{%- set pref_exclude_completed = (pref_exclude_completed | default(false, true) | string | lower) == 'true' -%}
+{%- set pref_exclude_states = pref_exclude_states if pref_exclude_states is iterable and pref_exclude_states is not string else [] -%}
 {%- set pref_exclude_states = pref_exclude_states | map('lower') | list -%}
 {%- if pref_exclude_completed and 'completed' not in pref_exclude_states -%}
   {%- set pref_exclude_states = pref_exclude_states + ['completed'] -%}
 {%- endif -%}
-{%- set pref_exclude_blocked = pref_exclude_blocked | default(false, true) -%}
+{%- set pref_exclude_blocked = (pref_exclude_blocked | default(false, true) | string | lower) == 'true' -%}
 {%- if pref_exclude_blocked and 'completed_by_other' not in pref_exclude_states -%}
   {%- set pref_exclude_states = pref_exclude_states + ['completed_by_other'] -%}
 {%- endif -%}
@@ -55,9 +68,10 @@
 {%- if pref_exclude_blocked and 'missed' not in pref_exclude_states -%}
   {%- set pref_exclude_states = pref_exclude_states + ['missed'] -%}
 {%- endif -%}
-{%- set pref_use_label_grouping = pref_use_label_grouping | default(false, true) -%}
-{%- set pref_exclude_label_list = pref_exclude_label_list if pref_exclude_label_list is iterable else [] -%}
-{%- set pref_label_display_order = pref_label_display_order if pref_label_display_order is iterable else [] -%}
+{%- set pref_use_label_grouping = (pref_use_label_grouping | default(false, true) | string | lower) == 'true' -%}
+{%- set pref_exclude_label_list = pref_exclude_label_list if pref_exclude_label_list is iterable and pref_exclude_label_list is not string else [] -%}
+{%- set pref_label_display_order = pref_label_display_order if pref_label_display_order is iterable and pref_label_display_order is not string else [] -%}
+{%- set pref_sort_within_groups = (pref_sort_within_groups | default('by_state_and_date') | string | lower) -%}
 {%- if pref_sort_within_groups not in ['default', 'name_asc', 'name_desc', 'date_asc', 'date_desc', 'by_state_and_date'] -%}
   {%- set pref_sort_within_groups = 'by_state_and_date' -%}
 {%- endif -%}
@@ -105,6 +119,12 @@
   {%- set ui_control_key_header_collapsed = ui_control_key_root ~ '/header_collapse' -%}
   {%- set ui_control_key_settings_open = ui_control_key_root ~ '/settings_open' -%}
   {%- set ui_control_key_row_variant = ui_control_key_root ~ '/row_variant' -%}
+  {%- set ui_control_key_use_overdue_grouping = ui_control_key_root ~ '/use_overdue_grouping' -%}
+  {%- set ui_control_key_today_grouping_mode = ui_control_key_root ~ '/today_grouping_mode' -%}
+  {%- set ui_control_key_use_today_grouping = ui_control_key_root ~ '/use_today_grouping' -%}
+  {%- set ui_control_key_use_today_am_grouping = ui_control_key_root ~ '/use_today_am_grouping' -%}
+  {%- set ui_control_key_use_this_week_grouping = ui_control_key_root ~ '/use_this_week_grouping' -%}
+  {%- set ui_control_key_use_label_grouping = ui_control_key_root ~ '/use_label_grouping' -%}
   {%- set ui_control_key_exclude_completed = ui_control_key_root ~ '/exclude_completed' -%}
   {%- set ui_control_key_exclude_blocked = ui_control_key_root ~ '/exclude_blocked' -%}
   {%- set ui_control_key_sort_within_groups = ui_control_key_root ~ '/sort_within_groups' -%}
@@ -116,6 +136,18 @@
       {%- set ui_root.current = {} -%}
     {%- endif -%}
   {%- endfor -%}
+  {%- set has_header_collapsed_override = ui_root.current is mapping and 'header_collapse' in ui_root.current -%}
+  {%- set has_settings_open_override = ui_root.current is mapping and 'settings_open' in ui_root.current -%}
+  {%- set has_row_variant_override = ui_root.current is mapping and 'row_variant' in ui_root.current -%}
+  {%- set has_use_overdue_grouping_override = ui_root.current is mapping and 'use_overdue_grouping' in ui_root.current -%}
+  {%- set has_today_grouping_mode_override = ui_root.current is mapping and 'today_grouping_mode' in ui_root.current -%}
+  {%- set has_use_today_grouping_override = ui_root.current is mapping and 'use_today_grouping' in ui_root.current -%}
+  {%- set has_use_today_am_grouping_override = ui_root.current is mapping and 'use_today_am_grouping' in ui_root.current -%}
+  {%- set has_use_this_week_grouping_override = ui_root.current is mapping and 'use_this_week_grouping' in ui_root.current -%}
+  {%- set has_use_label_grouping_override = ui_root.current is mapping and 'use_label_grouping' in ui_root.current -%}
+  {%- set has_exclude_completed_override = ui_root.current is mapping and 'exclude_completed' in ui_root.current -%}
+  {%- set has_exclude_blocked_override = ui_root.current is mapping and 'exclude_blocked' in ui_root.current -%}
+  {%- set has_sort_within_groups_override = ui_root.current is mapping and 'sort_within_groups' in ui_root.current -%}
   {%- set header_collapsed = ui_root.current['header_collapse'] if ui_root.current is mapping and 'header_collapse' in ui_root.current else pref_default_header_collapsed -%}
   {%- set header_collapsed = (header_collapsed | string | lower) == 'true' -%}
   {%- set settings_open = ui_root.current['settings_open'] if ui_root.current is mapping and 'settings_open' in ui_root.current else false -%}
@@ -125,6 +157,26 @@
   {%- if effective_row_variant not in ['standard', 'kids'] -%}
     {%- set effective_row_variant = pref_chore_row_variant -%}
   {%- endif -%}
+  {%- set legacy_effective_use_today_grouping = ui_root.current['use_today_grouping'] if ui_root.current is mapping and 'use_today_grouping' in ui_root.current else pref_use_today_grouping -%}
+  {%- set legacy_effective_use_today_grouping = (legacy_effective_use_today_grouping | string | lower) == 'true' -%}
+  {%- set legacy_effective_use_today_am_grouping = ui_root.current['use_today_am_grouping'] if ui_root.current is mapping and 'use_today_am_grouping' in ui_root.current else pref_use_today_am_grouping -%}
+  {%- set legacy_effective_use_today_am_grouping = (legacy_effective_use_today_am_grouping | string | lower) == 'true' -%}
+  {%- set effective_use_overdue_grouping = ui_root.current['use_overdue_grouping'] if ui_root.current is mapping and 'use_overdue_grouping' in ui_root.current else pref_use_overdue_grouping -%}
+  {%- set effective_use_overdue_grouping = (effective_use_overdue_grouping | string | lower) == 'true' -%}
+  {%- set effective_today_grouping_mode = ui_root.current['today_grouping_mode'] if ui_root.current is mapping and 'today_grouping_mode' in ui_root.current else 'today_morning' if legacy_effective_use_today_am_grouping else 'today' if legacy_effective_use_today_grouping else 'off' -%}
+  {%- set effective_today_grouping_mode = (effective_today_grouping_mode | default(pref_today_grouping_mode) | string | lower) -%}
+  {%- if effective_today_grouping_mode not in ['off', 'today', 'today_morning'] -%}
+    {%- set effective_today_grouping_mode = pref_today_grouping_mode -%}
+  {%- endif -%}
+  {%- set effective_use_today_grouping = effective_today_grouping_mode != 'off' -%}
+  {%- set effective_use_today_am_grouping = effective_today_grouping_mode == 'today_morning' -%}
+  {%- set next_today_grouping_mode = 'today' if effective_today_grouping_mode == 'off' else 'today_morning' if effective_today_grouping_mode == 'today' else 'off' -%}
+  {%- set today_grouping_mode_label_key = 'today_group_mode_off' if effective_today_grouping_mode == 'off' else 'today_group_mode_today' if effective_today_grouping_mode == 'today' else 'today_group_mode_today_morning' -%}
+  {%- set today_grouping_mode_icon = 'mdi:calendar-remove-outline' if effective_today_grouping_mode == 'off' else 'mdi:calendar-today' if effective_today_grouping_mode == 'today' else 'mdi:calendar-clock' -%}
+  {%- set effective_use_this_week_grouping = ui_root.current['use_this_week_grouping'] if ui_root.current is mapping and 'use_this_week_grouping' in ui_root.current else pref_use_this_week_grouping -%}
+  {%- set effective_use_this_week_grouping = (effective_use_this_week_grouping | string | lower) == 'true' -%}
+  {%- set effective_use_label_grouping = ui_root.current['use_label_grouping'] if ui_root.current is mapping and 'use_label_grouping' in ui_root.current else pref_use_label_grouping -%}
+  {%- set effective_use_label_grouping = (effective_use_label_grouping | string | lower) == 'true' -%}
   {%- if pref_chore_engine_layout_mode == 'responsive' -%}
     {%- set effective_column_count_mobile = pref_column_count_mobile_kids if effective_row_variant == 'kids' else pref_column_count_mobile_standard -%}
     {%- set effective_column_count_wide = pref_column_count_wide_kids if effective_row_variant == 'kids' else pref_column_count_wide_standard -%}
@@ -140,6 +192,7 @@
   {%- if effective_sort_within_groups not in ['default', 'name_asc', 'name_desc', 'date_asc', 'date_desc', 'by_state_and_date'] -%}
     {%- set effective_sort_within_groups = pref_sort_within_groups -%}
   {%- endif -%}
+  {%- set next_row_variant = 'kids' if effective_row_variant == 'standard' else 'standard' -%}
   {%- set next_sort_within_groups = 'default' if effective_sort_within_groups == 'by_state_and_date' else 'name_asc' if effective_sort_within_groups == 'default' else 'name_desc' if effective_sort_within_groups == 'name_asc' else 'date_asc' if effective_sort_within_groups == 'name_desc' else 'date_desc' if effective_sort_within_groups == 'date_asc' else 'by_state_and_date' -%}
   {%- set sort_mode_label_key = 'sort_mode_default' if effective_sort_within_groups == 'default' else 'sort_mode_name_asc' if effective_sort_within_groups == 'name_asc' else 'sort_mode_name_desc' if effective_sort_within_groups == 'name_desc' else 'sort_mode_date_asc' if effective_sort_within_groups == 'date_asc' else 'sort_mode_date_desc' if effective_sort_within_groups == 'date_desc' else 'sort_mode_by_state_and_date' -%}
   {%- set effective_exclude_states = pref_exclude_states | reject('equalto', 'completed') | reject('equalto', 'completed_by_other') | reject('equalto', 'not_my_turn') | reject('equalto', 'missed') | list -%}

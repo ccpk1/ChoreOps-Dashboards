@@ -83,6 +83,7 @@ chore_row_v1:
                 { "justify-self": "start" },
                 { "min-width": "0" },
                 { "width": "100%" },
+                { "text-align": "left" },
                 { "font-size": "10px" },
                 { "line-height": "1.2" },
                 { "margin-bottom": "1px" },

@@ -23,9 +23,9 @@ chore_row_kids_v1:
         {'background-color': "[[[ const rawState = entity.state; const state = (rawState === 'approved' || rawState === 'already_approved') ? 'completed' : (rawState === 'approved_in_part' ? 'completed_in_part' : rawState); if (state === 'claimed' || state === 'claimed_in_part') return 'color-mix(in srgb, #a957fa 10%, var(--card-background-color))'; if (['completed', 'completed_in_part'].includes(state)) return 'color-mix(in srgb, var(--success-color) 8%, var(--card-background-color))'; return 'var(--card-background-color)'; ]]]"}
       ],
       'grid': [
-        {'grid-template-areas': '"badge_type i badge_state" "n n n" "reward reward reward" "kid_status kid_status kid_status"'},
+        {'grid-template-areas': '"badge_type i badge_state" "n n n" "reward reward reward" "description description description" "kid_status kid_status kid_status"'},
         {'grid-template-columns': '30px 1fr 26px'},
-        {'grid-template-rows': '58px min-content min-content min-content'},
+        {'grid-template-rows': '58px min-content min-content min-content min-content'},
         {'row-gap': '3px'},
         {'column-gap': '6px'},
         {'align-items': 'center'}
@@ -80,6 +80,16 @@ chore_row_kids_v1:
           {'font-weight': '700'},
           {'color': 'var(--warning-color)'}
         ],
+        'description': [
+          {'justify-self': 'center'},
+          {'text-align': 'center'},
+          {'font-size': '10px'},
+          {'font-weight': '400'},
+          {'line-height': '1.2'},
+          {'color': 'var(--secondary-text-color)'},
+          {'white-space': 'normal'},
+          {'display': "[[[ const prefEnabled = (typeof variables !== 'undefined' && variables && variables.pref_show_chore_description === false) ? false : true; const desc = typeof entity.attributes.description === 'string' ? entity.attributes.description.trim() : ''; return prefEnabled && desc.length > 0 ? 'block' : 'none'; ]]]"}
+        ],
         'btn_undo': [
           {'position': 'absolute'},
           {'right': '8px'},
@@ -101,6 +111,7 @@ chore_row_kids_v1:
       'badge_state': "[[[ const rawState = entity.state; const state = (rawState === 'approved' || rawState === 'already_approved') ? 'completed' : (rawState === 'approved_in_part' ? 'completed_in_part' : rawState); let icon = ''; if (state === 'claimed' || state === 'claimed_in_part') icon = 'mdi:check'; else if (['completed', 'completed_in_part'].includes(state)) icon = 'mdi:check-all'; else if (state === 'waiting') icon = 'mdi:clock-outline'; else if (['missed', 'not_my_turn'].includes(state)) icon = 'mdi:lock-outline'; else if (state === 'completed_by_other') icon = 'mdi:account-check-outline'; if (!icon) return ''; return `<ha-icon icon=\"${icon}\" style=\"width:16px;height:16px;transform:translateY(-4px);\"></ha-icon>`; ]]]",
       'badge_type': "[[[ const type = entity.attributes.completion_criteria || 'independent'; let icon = ''; if (type === 'shared_all') icon = 'mdi:account-group'; else if (type === 'shared_first') icon = 'mdi:flag-checkered'; else if (type.includes('rotation')) icon = 'mdi:account-sync'; if (!icon) return ''; return `<ha-icon icon=\"${icon}\" style=\"width:18px;height:18px;transform:translateY(-2px);\"></ha-icon>`; ]]]",
       'reward': "[[[ const pointsEnabled = (typeof variables !== 'undefined' && variables && (variables.gamification_enabled === true || variables.points_enabled === true)); if (!pointsEnabled) return ''; const rawPoints = entity.attributes.default_points; const points = (rawPoints === undefined || rawPoints === null || rawPoints === '') ? '--' : `${rawPoints}`; const pIcon = (typeof variables !== 'undefined' && variables && typeof variables.points_icon === 'string' && variables.points_icon.trim().length > 0) ? variables.points_icon : 'mdi:star'; const pLabel = (typeof variables !== 'undefined' && variables && typeof variables.points_label === 'string' && variables.points_label.trim().length > 0) ? variables.points_label : 'Points'; return `<ha-icon icon=\"${pIcon}\" style=\"width:18px;height:18px;margin-right:4px;transform:translateY(-1px);\"></ha-icon>${points} ${pLabel}`; ]]]",
+      'description': "[[[ const prefEnabled = (typeof variables !== 'undefined' && variables && variables.pref_show_chore_description === false) ? false : true; const value = typeof entity.attributes.description === 'string' ? entity.attributes.description.trim() : ''; if (!prefEnabled || value.length === 0) return ''; const escaped = value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); return `<span>${escaped}</span>`; ]]]",
       'btn_undo': {
         'card': {
           'type': 'custom:button-card',

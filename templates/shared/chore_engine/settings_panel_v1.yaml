@@ -1,322 +1,560 @@
 {%- if settings_open -%}
+  {%- set controls_enabled = integration_entry_id not in ['', none] and dashboard_helper_user_id not in ['', none] -%}
+  {%- set settings_button_padding = '8px 6px' -%}
+  {%- set settings_button_font_size = '11px' -%}
+  {%- set configure_card = {
+    'type': 'custom:button-card',
+    'name': ui.get('configure', 'err-configure'),
+    'icon': 'mdi:tune-variant',
+    'show_name': true,
+    'show_icon': true,
+    'tap_action': {'action': 'none'},
+    'styles': {
+      'card': [
+        {'background': 'var(--secondary-background-color)'},
+        {'box-shadow': 'none'},
+        {'border': '1px solid var(--divider-color)'},
+        {'border-radius': '12px 12px 0 0'},
+        {'padding': '8px 12px 6px 12px'}
+      ],
+      'grid': [
+        {'grid-template-areas': '"i n"'},
+        {'grid-template-columns': 'min-content 1fr'},
+        {'column-gap': '6px'},
+        {'align-items': 'center'}
+      ],
+      'icon': [
+        {'width': '16px'},
+        {'color': 'var(--primary-color)'}
+      ],
+      'name': [
+        {'justify-self': 'start'},
+        {'font-size': '12px'},
+        {'font-weight': '700'},
+        {'text-transform': 'uppercase'},
+        {'letter-spacing': '0.6px'},
+        {'color': 'var(--primary-text-color)'}
+      ]
+    }
+  } -%}
+
+  {%- set row_variant_tap_action = ({
+    'action': 'call-service',
+    'service': 'choreops.manage_ui_control',
+    'data': {
+      'config_entry_id': integration_entry_id,
+      'user_id': dashboard_helper_user_id,
+      'ui_control_action': 'remove',
+      'key': ui_control_key_row_variant
+    }
+  } if next_row_variant == pref_chore_row_variant and has_row_variant_override and controls_enabled else {
+    'action': 'call-service',
+    'service': 'choreops.manage_ui_control',
+    'data': {
+      'config_entry_id': integration_entry_id,
+      'user_id': dashboard_helper_user_id,
+      'ui_control_action': 'update',
+      'key': ui_control_key_row_variant,
+      'value': next_row_variant
+    }
+  } if controls_enabled else {
+    'action': 'none'
+  }) -%}
+  {%- set row_variant_card = {
+    'type': 'custom:button-card',
+    'name': ui.get('standard', 'err-standard') if effective_row_variant == 'standard' else ui.get('kids', 'err-kids'),
+    'icon': 'mdi:view-agenda-outline' if effective_row_variant == 'standard' else 'mdi:view-grid-plus-outline',
+    'show_name': true,
+    'show_icon': true,
+    'tap_action': row_variant_tap_action,
+    'styles': {
+      'card': [
+        {'background': 'color-mix(in srgb, var(--primary-color) 14%, var(--card-background-color))'},
+        {'box-shadow': 'none'},
+        {'border': '1px solid var(--primary-color)'},
+        {'border-radius': '12px'},
+        {'padding': settings_button_padding}
+      ],
+      'grid': [
+        {'grid-template-areas': '"i" "n"'},
+        {'grid-template-columns': '1fr'},
+        {'row-gap': '4px'}
+      ],
+      'icon': [
+        {'width': '18px'},
+        {'color': 'var(--primary-color)'}
+      ],
+      'name': [
+        {'font-size': settings_button_font_size},
+        {'font-weight': '700'},
+        {'color': 'var(--primary-text-color)'},
+        {'white-space': 'normal'},
+        {'line-height': '1.2'}
+      ]
+    }
+  } -%}
+
+  {%- set overdue_group_card = {
+    'type': 'custom:button-card',
+    'name': ui.get('hide_overdue_group', 'err-hide_overdue_group') if effective_use_overdue_grouping else ui.get('show_overdue_group', 'err-show_overdue_group'),
+    'icon': 'mdi:alert-octagon' if effective_use_overdue_grouping else 'mdi:alert-octagon-outline',
+    'show_name': true,
+    'show_icon': true,
+    'tap_action': ({
+      'action': 'call-service',
+      'service': 'choreops.manage_ui_control',
+      'data': {
+        'config_entry_id': integration_entry_id,
+        'user_id': dashboard_helper_user_id,
+        'ui_control_action': 'remove',
+        'key': ui_control_key_use_overdue_grouping
+      }
+    } if (not effective_use_overdue_grouping) == pref_use_overdue_grouping and has_use_overdue_grouping_override and controls_enabled else {
+      'action': 'call-service',
+      'service': 'choreops.manage_ui_control',
+      'data': {
+        'config_entry_id': integration_entry_id,
+        'user_id': dashboard_helper_user_id,
+        'ui_control_action': 'update',
+        'key': ui_control_key_use_overdue_grouping,
+        'value': (not effective_use_overdue_grouping)
+      }
+    } if controls_enabled else {
+      'action': 'none'
+    }),
+    'styles': {
+      'card': [
+        {'background': ('color-mix(in srgb, var(--primary-color) 14%, var(--card-background-color))') if effective_use_overdue_grouping else 'var(--card-background-color)'},
+        {'box-shadow': 'none'},
+        {'border': '1px solid var(--primary-color)' if effective_use_overdue_grouping else '1px solid var(--divider-color)'},
+        {'border-radius': '12px'},
+        {'padding': settings_button_padding}
+      ],
+      'grid': [
+        {'grid-template-areas': '"i" "n"'},
+        {'grid-template-columns': '1fr'},
+        {'row-gap': '4px'}
+      ],
+      'icon': [
+        {'width': '18px'},
+        {'color': 'var(--primary-color)'}
+      ],
+      'name': [
+        {'font-size': settings_button_font_size},
+        {'font-weight': '700'},
+        {'color': 'var(--primary-text-color)'},
+        {'white-space': 'normal'},
+        {'line-height': '1.2'}
+      ]
+    }
+  } -%}
+
+  {%- set today_grouping_tap_action = ({
+    'action': 'multi-actions',
+    'actions': [
+      ({
+        'action': 'call-service',
+        'service': 'choreops.manage_ui_control',
+        'data': {
+          'config_entry_id': integration_entry_id,
+          'user_id': dashboard_helper_user_id,
+          'ui_control_action': 'remove',
+          'key': ui_control_key_use_today_grouping
+        }
+      } if has_use_today_grouping_override else {
+        'action': 'none'
+      }),
+      ({
+        'action': 'call-service',
+        'service': 'choreops.manage_ui_control',
+        'data': {
+          'config_entry_id': integration_entry_id,
+          'user_id': dashboard_helper_user_id,
+          'ui_control_action': 'remove',
+          'key': ui_control_key_use_today_am_grouping
+        }
+      } if has_use_today_am_grouping_override else {
+        'action': 'none'
+      }),
+      ({
+        'action': 'call-service',
+        'service': 'choreops.manage_ui_control',
+        'data': {
+          'config_entry_id': integration_entry_id,
+          'user_id': dashboard_helper_user_id,
+          'ui_control_action': 'remove',
+          'key': ui_control_key_today_grouping_mode
+        }
+      } if next_today_grouping_mode == pref_today_grouping_mode and has_today_grouping_mode_override else {
+        'action': 'call-service',
+        'service': 'choreops.manage_ui_control',
+        'data': {
+          'config_entry_id': integration_entry_id,
+          'user_id': dashboard_helper_user_id,
+          'ui_control_action': 'update',
+          'key': ui_control_key_today_grouping_mode,
+          'value': next_today_grouping_mode
+        }
+      } if next_today_grouping_mode != pref_today_grouping_mode or has_today_grouping_mode_override else {
+        'action': 'none'
+      })
+    ]
+  } if controls_enabled else {
+    'action': 'none'
+  }) -%}
+  {%- set today_grouping_card = {
+    'type': 'custom:button-card',
+    'name': ui.get(today_grouping_mode_label_key, 'err-' ~ today_grouping_mode_label_key),
+    'icon': today_grouping_mode_icon,
+    'show_name': true,
+    'show_icon': true,
+    'tap_action': today_grouping_tap_action,
+    'styles': {
+      'card': [
+        {'background': ('color-mix(in srgb, var(--primary-color) 14%, var(--card-background-color))') if effective_today_grouping_mode != 'off' else 'var(--card-background-color)'},
+        {'box-shadow': 'none'},
+        {'border': '1px solid var(--primary-color)' if effective_today_grouping_mode != 'off' else '1px solid var(--divider-color)'},
+        {'border-radius': '12px'},
+        {'padding': settings_button_padding}
+      ],
+      'grid': [
+        {'grid-template-areas': '"i" "n"'},
+        {'grid-template-columns': '1fr'},
+        {'row-gap': '4px'}
+      ],
+      'icon': [
+        {'width': '18px'},
+        {'color': 'var(--primary-color)'}
+      ],
+      'name': [
+        {'font-size': settings_button_font_size},
+        {'font-weight': '700'},
+        {'color': 'var(--primary-text-color)'},
+        {'white-space': 'normal'},
+        {'line-height': '1.2'}
+      ]
+    }
+  } -%}
+
+  {%- set this_week_group_card = {
+    'type': 'custom:button-card',
+    'name': ui.get('hide_this_week_group', 'err-hide_this_week_group') if effective_use_this_week_grouping else ui.get('show_this_week_group', 'err-show_this_week_group'),
+    'icon': 'mdi:calendar-week' if effective_use_this_week_grouping else 'mdi:calendar-week-outline',
+    'show_name': true,
+    'show_icon': true,
+    'tap_action': ({
+      'action': 'call-service',
+      'service': 'choreops.manage_ui_control',
+      'data': {
+        'config_entry_id': integration_entry_id,
+        'user_id': dashboard_helper_user_id,
+        'ui_control_action': 'remove',
+        'key': ui_control_key_use_this_week_grouping
+      }
+    } if (not effective_use_this_week_grouping) == pref_use_this_week_grouping and has_use_this_week_grouping_override and controls_enabled else {
+      'action': 'call-service',
+      'service': 'choreops.manage_ui_control',
+      'data': {
+        'config_entry_id': integration_entry_id,
+        'user_id': dashboard_helper_user_id,
+        'ui_control_action': 'update',
+        'key': ui_control_key_use_this_week_grouping,
+        'value': (not effective_use_this_week_grouping)
+      }
+    } if controls_enabled else {
+      'action': 'none'
+    }),
+    'styles': {
+      'card': [
+        {'background': ('color-mix(in srgb, var(--primary-color) 14%, var(--card-background-color))') if effective_use_this_week_grouping else 'var(--card-background-color)'},
+        {'box-shadow': 'none'},
+        {'border': '1px solid var(--primary-color)' if effective_use_this_week_grouping else '1px solid var(--divider-color)'},
+        {'border-radius': '12px'},
+        {'padding': settings_button_padding}
+      ],
+      'grid': [
+        {'grid-template-areas': '"i" "n"'},
+        {'grid-template-columns': '1fr'},
+        {'row-gap': '4px'}
+      ],
+      'icon': [
+        {'width': '18px'},
+        {'color': 'var(--primary-color)'}
+      ],
+      'name': [
+        {'font-size': settings_button_font_size},
+        {'font-weight': '700'},
+        {'color': 'var(--primary-text-color)'},
+        {'white-space': 'normal'},
+        {'line-height': '1.2'}
+      ]
+    }
+  } -%}
+
+  {%- set label_group_card = {
+    'type': 'custom:button-card',
+    'name': ui.get('disable_label_grouping', 'err-disable_label_grouping') if effective_use_label_grouping else ui.get('enable_label_grouping', 'err-enable_label_grouping'),
+    'icon': 'mdi:label-multiple' if effective_use_label_grouping else 'mdi:label-multiple-outline',
+    'show_name': true,
+    'show_icon': true,
+    'tap_action': ({
+      'action': 'call-service',
+      'service': 'choreops.manage_ui_control',
+      'data': {
+        'config_entry_id': integration_entry_id,
+        'user_id': dashboard_helper_user_id,
+        'ui_control_action': 'remove',
+        'key': ui_control_key_use_label_grouping
+      }
+    } if (not effective_use_label_grouping) == pref_use_label_grouping and has_use_label_grouping_override and controls_enabled else {
+      'action': 'call-service',
+      'service': 'choreops.manage_ui_control',
+      'data': {
+        'config_entry_id': integration_entry_id,
+        'user_id': dashboard_helper_user_id,
+        'ui_control_action': 'update',
+        'key': ui_control_key_use_label_grouping,
+        'value': (not effective_use_label_grouping)
+      }
+    } if controls_enabled else {
+      'action': 'none'
+    }),
+    'styles': {
+      'card': [
+        {'background': ('color-mix(in srgb, var(--primary-color) 14%, var(--card-background-color))') if effective_use_label_grouping else 'var(--card-background-color)'},
+        {'box-shadow': 'none'},
+        {'border': '1px solid var(--primary-color)' if effective_use_label_grouping else '1px solid var(--divider-color)'},
+        {'border-radius': '12px'},
+        {'padding': settings_button_padding}
+      ],
+      'grid': [
+        {'grid-template-areas': '"i" "n"'},
+        {'grid-template-columns': '1fr'},
+        {'row-gap': '4px'}
+      ],
+      'icon': [
+        {'width': '18px'},
+        {'color': 'var(--primary-color)'}
+      ],
+      'name': [
+        {'font-size': settings_button_font_size},
+        {'font-weight': '700'},
+        {'color': 'var(--primary-text-color)'},
+        {'white-space': 'normal'},
+        {'line-height': '1.2'}
+      ]
+    }
+  } -%}
+
+  {%- set completed_filter_card = {
+    'type': 'custom:button-card',
+    'name': ui.get('hide_completed', 'err-hide_completed') if not exclude_completed_effective else ui.get('show_completed', 'err-show_completed'),
+    'icon': 'mdi:check-circle-outline' if not exclude_completed_effective else 'mdi:check-circle',
+    'show_name': true,
+    'show_icon': true,
+    'tap_action': ({
+      'action': 'call-service',
+      'service': 'choreops.manage_ui_control',
+      'data': {
+        'config_entry_id': integration_entry_id,
+        'user_id': dashboard_helper_user_id,
+        'ui_control_action': 'remove',
+        'key': ui_control_key_exclude_completed
+      }
+    } if (not exclude_completed_effective) == pref_exclude_completed and has_exclude_completed_override and controls_enabled else {
+      'action': 'call-service',
+      'service': 'choreops.manage_ui_control',
+      'data': {
+        'config_entry_id': integration_entry_id,
+        'user_id': dashboard_helper_user_id,
+        'ui_control_action': 'update',
+        'key': ui_control_key_exclude_completed,
+        'value': (not exclude_completed_effective)
+      }
+    } if controls_enabled else {
+      'action': 'none'
+    }),
+    'styles': {
+      'card': [
+        {'background': ('color-mix(in srgb, var(--primary-color) 14%, var(--card-background-color))') if exclude_completed_effective else 'var(--card-background-color)'},
+        {'box-shadow': 'none'},
+        {'border': '1px solid var(--primary-color)' if exclude_completed_effective else '1px solid var(--divider-color)'},
+        {'border-radius': '12px'},
+        {'padding': settings_button_padding}
+      ],
+      'grid': [
+        {'grid-template-areas': '"i" "n"'},
+        {'grid-template-columns': '1fr'},
+        {'row-gap': '4px'}
+      ],
+      'icon': [
+        {'width': '18px'},
+        {'color': 'var(--primary-color)'}
+      ],
+      'name': [
+        {'font-size': settings_button_font_size},
+        {'font-weight': '700'},
+        {'color': 'var(--primary-text-color)'},
+        {'white-space': 'normal'},
+        {'line-height': '1.2'}
+      ]
+    }
+  } -%}
+
+  {%- set blocked_filter_card = {
+    'type': 'custom:button-card',
+    'name': ui.get('hide_blocked', 'err-hide_blocked') if not exclude_blocked_effective else ui.get('show_blocked', 'err-show_blocked'),
+    'icon': 'mdi:minus-circle-outline' if not exclude_blocked_effective else 'mdi:minus-circle',
+    'show_name': true,
+    'show_icon': true,
+    'tap_action': ({
+      'action': 'call-service',
+      'service': 'choreops.manage_ui_control',
+      'data': {
+        'config_entry_id': integration_entry_id,
+        'user_id': dashboard_helper_user_id,
+        'ui_control_action': 'remove',
+        'key': ui_control_key_exclude_blocked
+      }
+    } if (not exclude_blocked_effective) == pref_exclude_blocked and has_exclude_blocked_override and controls_enabled else {
+      'action': 'call-service',
+      'service': 'choreops.manage_ui_control',
+      'data': {
+        'config_entry_id': integration_entry_id,
+        'user_id': dashboard_helper_user_id,
+        'ui_control_action': 'update',
+        'key': ui_control_key_exclude_blocked,
+        'value': (not exclude_blocked_effective)
+      }
+    } if controls_enabled else {
+      'action': 'none'
+    }),
+    'styles': {
+      'card': [
+        {'background': ('color-mix(in srgb, var(--primary-color) 14%, var(--card-background-color))') if exclude_blocked_effective else 'var(--card-background-color)'},
+        {'box-shadow': 'none'},
+        {'border': '1px solid var(--primary-color)' if exclude_blocked_effective else '1px solid var(--divider-color)'},
+        {'border-radius': '12px'},
+        {'padding': settings_button_padding}
+      ],
+      'grid': [
+        {'grid-template-areas': '"i" "n"'},
+        {'grid-template-columns': '1fr'},
+        {'row-gap': '4px'}
+      ],
+      'icon': [
+        {'width': '18px'},
+        {'color': 'var(--primary-color)'}
+      ],
+      'name': [
+        {'font-size': settings_button_font_size},
+        {'font-weight': '700'},
+        {'color': 'var(--primary-text-color)'},
+        {'white-space': 'normal'},
+        {'line-height': '1.2'}
+      ]
+    }
+  } -%}
+
+  {%- set sort_card = {
+    'type': 'custom:button-card',
+    'name': ui.get(sort_mode_label_key, 'err-' ~ sort_mode_label_key),
+    'icon': 'mdi:sort-variant',
+    'show_name': true,
+    'show_icon': true,
+    'tap_action': ({
+      'action': 'call-service',
+      'service': 'choreops.manage_ui_control',
+      'data': {
+        'config_entry_id': integration_entry_id,
+        'user_id': dashboard_helper_user_id,
+        'ui_control_action': 'remove',
+        'key': ui_control_key_sort_within_groups
+      }
+    } if next_sort_within_groups == pref_sort_within_groups and has_sort_within_groups_override and controls_enabled else {
+      'action': 'call-service',
+      'service': 'choreops.manage_ui_control',
+      'data': {
+        'config_entry_id': integration_entry_id,
+        'user_id': dashboard_helper_user_id,
+        'ui_control_action': 'update',
+        'key': ui_control_key_sort_within_groups,
+        'value': next_sort_within_groups
+      }
+    } if controls_enabled else {
+      'action': 'none'
+    }),
+    'styles': {
+      'card': [
+        {'background': 'color-mix(in srgb, var(--primary-color) 10%, var(--card-background-color))'},
+        {'box-shadow': 'none'},
+        {'border': '1px solid var(--primary-color)'},
+        {'border-radius': '12px'},
+        {'padding': settings_button_padding}
+      ],
+      'grid': [
+        {'grid-template-areas': '"i" "n"'},
+        {'grid-template-columns': '1fr'},
+        {'row-gap': '4px'}
+      ],
+      'icon': [
+        {'width': '18px'},
+        {'color': 'var(--primary-color)'}
+      ],
+      'name': [
+        {'font-size': settings_button_font_size},
+        {'font-weight': '700'},
+        {'color': 'var(--primary-text-color)'},
+        {'white-space': 'normal'},
+        {'line-height': '1.2'}
+      ]
+    }
+  } -%}
+
+  {%- set mobile_settings_card = {
+    'type': 'grid',
+    'columns': pref_settings_column_count_mobile,
+    'square': false,
+    'cards': [
+      row_variant_card,
+      overdue_group_card,
+      today_grouping_card,
+      this_week_group_card,
+      label_group_card,
+      completed_filter_card,
+      blocked_filter_card,
+      sort_card
+    ]
+  } -%}
+  {%- set wide_settings_card = {
+    'type': 'grid',
+    'columns': pref_settings_column_count_wide,
+    'square': false,
+    'cards': [
+      row_variant_card,
+      overdue_group_card,
+      today_grouping_card,
+      this_week_group_card,
+      label_group_card,
+      completed_filter_card,
+      blocked_filter_card,
+      sort_card
+    ]
+  } -%}
   {{
     {
       'type': 'vertical-stack',
       'cards': [
+        configure_card,
         {
-          'type': 'custom:button-card',
-          'name': ui.get('configure', 'err-configure'),
-          'icon': 'mdi:tune-variant',
-          'show_name': true,
-          'show_icon': true,
-          'tap_action': {'action': 'none'},
-          'styles': {
-            'card': [
-              {'background': 'var(--secondary-background-color)'},
-              {'box-shadow': 'none'},
-              {'border': '1px solid var(--divider-color)'},
-              {'border-radius': '12px 12px 0 0'},
-              {'padding': '8px 12px 6px 12px'}
-            ],
-            'grid': [
-              {'grid-template-areas': '"i n"'},
-              {'grid-template-columns': 'min-content 1fr'},
-              {'column-gap': '6px'},
-              {'align-items': 'center'}
-            ],
-            'icon': [
-              {'width': '16px'},
-              {'color': 'var(--primary-color)'}
-            ],
-            'name': [
-              {'justify-self': 'start'},
-              {'font-size': '12px'},
-              {'font-weight': '700'},
-              {'text-transform': 'uppercase'},
-              {'letter-spacing': '0.6px'},
-              {'color': 'var(--primary-text-color)'}
-            ]
-          }
+          'type': 'conditional',
+          'conditions': [{'condition': 'screen', 'media_query': '(max-width: 768px)'}],
+          'card': mobile_settings_card
         },
         {
-          'type': 'grid',
-          'columns': 2,
-          'square': false,
-          'cards': [
-            {
-              'type': 'custom:button-card',
-              'name': ui.get('standard', 'err-standard'),
-              'icon': 'mdi:view-agenda-outline',
-              'show_name': true,
-              'show_icon': true,
-              'tap_action': ({
-                'action': 'call-service',
-                'service': 'choreops.manage_ui_control',
-                'data': {
-                  'config_entry_id': integration_entry_id,
-                  'user_id': dashboard_helper_user_id,
-                  'ui_control_action': 'remove',
-                  'key': ui_control_key_row_variant
-                }
-              } if pref_chore_row_variant == 'standard' and integration_entry_id not in ['', none] and dashboard_helper_user_id not in ['', none] else {
-                'action': 'call-service',
-                'service': 'choreops.manage_ui_control',
-                'data': {
-                  'config_entry_id': integration_entry_id,
-                  'user_id': dashboard_helper_user_id,
-                  'ui_control_action': 'update',
-                  'key': ui_control_key_row_variant,
-                  'value': 'standard'
-                }
-              } if integration_entry_id not in ['', none] and dashboard_helper_user_id not in ['', none] else {
-                'action': 'none'
-              }),
-              'styles': {
-                'card': [
-                  {'background': ('color-mix(in srgb, var(--primary-color) 14%, var(--card-background-color))') if effective_row_variant == 'standard' else 'var(--card-background-color)'},
-                  {'box-shadow': 'none'},
-                  {'border': '1px solid var(--primary-color)' if effective_row_variant == 'standard' else '1px solid var(--divider-color)'},
-                  {'border-radius': '0 0 0 12px'},
-                  {'padding': '10px 8px'}
-                ],
-                'grid': [
-                  {'grid-template-areas': '"i" "n"'},
-                  {'grid-template-columns': '1fr'},
-                  {'row-gap': '4px'}
-                ],
-                'icon': [
-                  {'width': '18px'},
-                  {'color': 'var(--primary-color)'}
-                ],
-                'name': [
-                  {'font-size': '12px'},
-                  {'font-weight': '700'},
-                  {'color': 'var(--primary-text-color)'}
-                ]
-              }
-            },
-            {
-              'type': 'custom:button-card',
-              'name': ui.get('kids', 'err-kids'),
-              'icon': 'mdi:view-grid-plus-outline',
-              'show_name': true,
-              'show_icon': true,
-              'tap_action': ({
-                'action': 'call-service',
-                'service': 'choreops.manage_ui_control',
-                'data': {
-                  'config_entry_id': integration_entry_id,
-                  'user_id': dashboard_helper_user_id,
-                  'ui_control_action': 'remove',
-                  'key': ui_control_key_row_variant
-                }
-              } if pref_chore_row_variant == 'kids' and integration_entry_id not in ['', none] and dashboard_helper_user_id not in ['', none] else {
-                'action': 'call-service',
-                'service': 'choreops.manage_ui_control',
-                'data': {
-                  'config_entry_id': integration_entry_id,
-                  'user_id': dashboard_helper_user_id,
-                  'ui_control_action': 'update',
-                  'key': ui_control_key_row_variant,
-                  'value': 'kids'
-                }
-              } if integration_entry_id not in ['', none] and dashboard_helper_user_id not in ['', none] else {
-                'action': 'none'
-              }),
-              'styles': {
-                'card': [
-                  {'background': ('color-mix(in srgb, var(--primary-color) 14%, var(--card-background-color))') if effective_row_variant == 'kids' else 'var(--card-background-color)'},
-                  {'box-shadow': 'none'},
-                  {'border': '1px solid var(--primary-color)' if effective_row_variant == 'kids' else '1px solid var(--divider-color)'},
-                  {'border-radius': '0 0 12px 0'},
-                  {'padding': '10px 8px'}
-                ],
-                'grid': [
-                  {'grid-template-areas': '"i" "n"'},
-                  {'grid-template-columns': '1fr'},
-                  {'row-gap': '4px'}
-                ],
-                'icon': [
-                  {'width': '18px'},
-                  {'color': 'var(--primary-color)'}
-                ],
-                'name': [
-                  {'font-size': '12px'},
-                  {'font-weight': '700'},
-                  {'color': 'var(--primary-text-color)'}
-                ]
-              }
-            }
-          ]
-        },
-        {
-          'type': 'grid',
-          'columns': 3,
-          'square': false,
-          'cards': [
-            {
-              'type': 'custom:button-card',
-              'name': ui.get('hide_completed', 'err-hide_completed') if not exclude_completed_effective else ui.get('show_completed', 'err-show_completed'),
-              'icon': 'mdi:check-circle-outline' if not exclude_completed_effective else 'mdi:check-circle',
-              'show_name': true,
-              'show_icon': true,
-              'tap_action': ({
-                'action': 'call-service',
-                'service': 'choreops.manage_ui_control',
-                'data': {
-                  'config_entry_id': integration_entry_id,
-                  'user_id': dashboard_helper_user_id,
-                  'ui_control_action': 'remove',
-                  'key': ui_control_key_exclude_completed
-                }
-              } if (not exclude_completed_effective) == pref_exclude_completed and integration_entry_id not in ['', none] and dashboard_helper_user_id not in ['', none] else {
-                'action': 'call-service',
-                'service': 'choreops.manage_ui_control',
-                'data': {
-                  'config_entry_id': integration_entry_id,
-                  'user_id': dashboard_helper_user_id,
-                  'ui_control_action': 'update',
-                  'key': ui_control_key_exclude_completed,
-                  'value': (not exclude_completed_effective)
-                }
-              } if integration_entry_id not in ['', none] and dashboard_helper_user_id not in ['', none] else {
-                'action': 'none'
-              }),
-              'styles': {
-                'card': [
-                  {'background': ('color-mix(in srgb, var(--primary-color) 14%, var(--card-background-color))') if exclude_completed_effective else 'var(--card-background-color)'},
-                  {'box-shadow': 'none'},
-                  {'border': '1px solid var(--primary-color)' if exclude_completed_effective else '1px solid var(--divider-color)'},
-                  {'border-radius': '0 0 0 12px'},
-                  {'padding': '10px 8px'}
-                ],
-                'grid': [
-                  {'grid-template-areas': '"i" "n"'},
-                  {'grid-template-columns': '1fr'},
-                  {'row-gap': '4px'}
-                ],
-                'icon': [
-                  {'width': '18px'},
-                  {'color': 'var(--primary-color)'}
-                ],
-                'name': [
-                  {'font-size': '12px'},
-                  {'font-weight': '700'},
-                  {'color': 'var(--primary-text-color)'},
-                  {'white-space': 'normal'},
-                  {'line-height': '1.2'}
-                ]
-              }
-            },
-            {
-              'type': 'custom:button-card',
-              'name': ui.get('hide_blocked', 'err-hide_blocked') if not exclude_blocked_effective else ui.get('show_blocked', 'err-show_blocked'),
-              'icon': 'mdi:minus-circle-outline' if not exclude_blocked_effective else 'mdi:minus-circle',
-              'show_name': true,
-              'show_icon': true,
-              'tap_action': ({
-                'action': 'call-service',
-                'service': 'choreops.manage_ui_control',
-                'data': {
-                  'config_entry_id': integration_entry_id,
-                  'user_id': dashboard_helper_user_id,
-                  'ui_control_action': 'remove',
-                  'key': ui_control_key_exclude_blocked
-                }
-              } if (not exclude_blocked_effective) == pref_exclude_blocked and integration_entry_id not in ['', none] and dashboard_helper_user_id not in ['', none] else {
-                'action': 'call-service',
-                'service': 'choreops.manage_ui_control',
-                'data': {
-                  'config_entry_id': integration_entry_id,
-                  'user_id': dashboard_helper_user_id,
-                  'ui_control_action': 'update',
-                  'key': ui_control_key_exclude_blocked,
-                  'value': (not exclude_blocked_effective)
-                }
-              } if integration_entry_id not in ['', none] and dashboard_helper_user_id not in ['', none] else {
-                'action': 'none'
-              }),
-              'styles': {
-                'card': [
-                  {'background': ('color-mix(in srgb, var(--primary-color) 14%, var(--card-background-color))') if exclude_blocked_effective else 'var(--card-background-color)'},
-                  {'box-shadow': 'none'},
-                  {'border': '1px solid var(--primary-color)' if exclude_blocked_effective else '1px solid var(--divider-color)'},
-                  {'border-radius': '0'},
-                  {'padding': '10px 8px'}
-                ],
-                'grid': [
-                  {'grid-template-areas': '"i" "n"'},
-                  {'grid-template-columns': '1fr'},
-                  {'row-gap': '4px'}
-                ],
-                'icon': [
-                  {'width': '18px'},
-                  {'color': 'var(--primary-color)'}
-                ],
-                'name': [
-                  {'font-size': '12px'},
-                  {'font-weight': '700'},
-                  {'color': 'var(--primary-text-color)'},
-                  {'white-space': 'normal'},
-                  {'line-height': '1.2'}
-                ]
-              }
-            },
-            {
-              'type': 'custom:button-card',
-              'name': ui.get(sort_mode_label_key, 'err-' ~ sort_mode_label_key),
-              'icon': 'mdi:sort-variant',
-              'show_name': true,
-              'show_icon': true,
-              'tap_action': ({
-                'action': 'call-service',
-                'service': 'choreops.manage_ui_control',
-                'data': {
-                  'config_entry_id': integration_entry_id,
-                  'user_id': dashboard_helper_user_id,
-                  'ui_control_action': 'remove',
-                  'key': ui_control_key_sort_within_groups
-                }
-              } if next_sort_within_groups == pref_sort_within_groups and integration_entry_id not in ['', none] and dashboard_helper_user_id not in ['', none] else {
-                'action': 'call-service',
-                'service': 'choreops.manage_ui_control',
-                'data': {
-                  'config_entry_id': integration_entry_id,
-                  'user_id': dashboard_helper_user_id,
-                  'ui_control_action': 'update',
-                  'key': ui_control_key_sort_within_groups,
-                  'value': next_sort_within_groups
-                }
-              } if integration_entry_id not in ['', none] and dashboard_helper_user_id not in ['', none] else {
-                'action': 'none'
-              }),
-              'styles': {
-                'card': [
-                  {'background': 'color-mix(in srgb, var(--primary-color) 10%, var(--card-background-color))'},
-                  {'box-shadow': 'none'},
-                  {'border': '1px solid var(--primary-color)'},
-                  {'border-radius': '0 0 12px 0'},
-                  {'padding': '10px 8px'}
-                ],
-                'grid': [
-                  {'grid-template-areas': '"i" "n"'},
-                  {'grid-template-columns': '1fr'},
-                  {'row-gap': '4px'}
-                ],
-                'icon': [
-                  {'width': '18px'},
-                  {'color': 'var(--primary-color)'}
-                ],
-                'name': [
-                  {'font-size': '12px'},
-                  {'font-weight': '700'},
-                  {'color': 'var(--primary-text-color)'},
-                  {'white-space': 'normal'},
-                  {'line-height': '1.2'}
-                ]
-              }
-            }
-          ]
+          'type': 'conditional',
+          'conditions': [{'condition': 'screen', 'media_query': '(min-width: 769px)'}],
+          'card': wide_settings_card
         }
       ]
     }

@@ -56,7 +56,9 @@ views:
                   << template_snippets.user_override_helper >>
 
                   {%- set pref_primary_tint_mix_pct = 14 -%}  {#-- Percent of var(--primary-color) mixed into the welcome-card background when fill is enabled. Allowed: 0-100. --#}
-                  {%- set pref_show_header_background = true -%}  {#-- Set to false to remove the welcome-card background fill and leave it transparent. Allowed: true, false. --#}
+
+                  {%- set pref_show_header_background = false -%}  {#-- Set to false to remove the welcome-card background fill and leave it transparent. Allowed: true, false. --#}
+
                   {%- set pref_show_header_thin_border = true -%}  {#-- Set to false to remove the thin outer border line. Accent borders are unaffected. Allowed: true, false. --#}
 
 
@@ -146,7 +148,7 @@ views:
                           'card': [
                             {'padding': '16px 20px'},
                             {'border-radius': '16px'},
-                            {'border': '1px solid var(--divider-color)' if pref_show_header_thin_border else 'none'},
+                            {'border': '1px solid color-mix(in srgb, var(--primary-color) ' ~ pref_primary_tint_mix_pct|string ~ '%, var(--divider-color))' if pref_show_header_thin_border else 'none'},
                             {'background-color': ('color-mix(in srgb, var(--primary-color) ' ~ pref_primary_tint_mix_pct|string ~ '%, var(--card-background-color))') if pref_show_header_background else 'transparent'},
                             {'box-shadow': 'none'}
                           ],
@@ -195,13 +197,17 @@ views:
 
                   {%- set pref_ui_control_key_root = 'gamification/chores' -%}
 
+                  {%- set pref_settings_column_count_mobile = 3 -%}
+
+                  {%- set pref_settings_column_count_wide = 3 -%}
+
                   {%- set pref_column_count_standard = 1 -%}
 
                   {%- set pref_column_count_kids = 2 -%}
 
                   {%- set pref_use_overdue_grouping = true -%}
 
-                  {%- set pref_use_today_grouping = true -%}
+                  {%- set pref_today_grouping_mode = 'today_morning' -%}
 
                   {%- set pref_include_daily_recurring_in_today = true -%}
 
@@ -2005,6 +2011,386 @@ views:
                                     {'white-space': 'normal'},
                                     {'line-height': '1.3'},
                                     {'display': 'block' if details_line | length > 0 else 'none'}
+                                  ],
+                                  'progress': [
+                                    {'width': '100%'},
+                                    {'text-align': 'left'},
+                                    {'display': 'block' if progress_html | length > 0 else 'none'}
+                                  ],
+                                  'stats': [
+                                    {'justify-self': 'stretch'},
+                                    {'width': '100%'},
+                                    {'font-size': '11px'},
+                                    {'color': 'var(--secondary-text-color)'},
+                                    {'text-align': 'left'},
+                                    {'white-space': 'normal'},
+                                    {'line-height': '1.3'},
+                                    {'display': 'block' if stats_html | length > 0 else 'none'},
+                                    {'margin-top': '2px'}
+                                  ]
+                                }
+                              }
+                            }
+                          }},
+                          {%- endfor -%}
+                        {%- endif -%}
+                      {%- endif -%}
+                    {%- endif -%}
+                  {%- endif -%}
+
+        - type: grid
+          square: false
+          columns: 1
+          grid_options:
+            columns: full
+          cards:
+            - type: custom:auto-entities
+              card:
+                square: false
+                type: grid
+                columns: 1
+              card_param: cards
+              filter:
+                template: |-
+                  {#-- ===== ACHIEVEMENTS CARD ===== --#}
+
+                  << template_snippets.meta_stamp >>
+
+
+                  {#-- 1. User Configuration --#}
+
+                  << template_snippets.user_override_helper >>
+
+                  {%- set pref_default_header_collapsed = false -%}
+                  {%- set pref_primary_tint_mix_pct = 14 -%}  {#-- Percent of var(--primary-color) mixed into the main Achievements header background when fill is enabled. Allowed: 0-100. --#}
+                  {%- set pref_show_header_background = true -%}  {#-- Set to false to remove the main Achievements header background fill and leave it transparent. Allowed: true, false. --#}
+                  {%- set pref_show_header_thin_border = true -%}  {#-- Set to false to remove the thin outer border line. Accent borders are unaffected. Allowed: true, false. --#}
+
+
+                  {#-- 2. Dynamic Lookups & Validations --#}
+
+                  {%- set pref_default_header_collapsed = (pref_default_header_collapsed | default('false') | string | lower) == 'true' -%}
+                  {%- set pref_primary_tint_mix_pct = pref_primary_tint_mix_pct | int(default=14) -%}
+                  {%- set pref_show_header_background = (pref_show_header_background | default('true') | string | lower) == 'true' -%}
+                  {%- set pref_show_header_thin_border = (pref_show_header_thin_border | default('true') | string | lower) == 'true' -%}
+                  {%- if pref_primary_tint_mix_pct < 0 -%}
+                    {%- set pref_primary_tint_mix_pct = 0 -%}
+                  {%- elif pref_primary_tint_mix_pct > 100 -%}
+                    {%- set pref_primary_tint_mix_pct = 100 -%}
+                  {%- endif -%}
+
+                  << template_snippets.user_setup >>
+
+                  << template_snippets.user_validation >>
+
+                  {%- if not skip_render -%}
+
+                    {#-- 3. Initialize --#}
+                    {%- set ns = namespace(
+                      achievements=[]
+                    ) -%}
+
+                    {#-- 4. Collect Data --#}
+                    {%- set core_sensors = state_attr(dashboard_helper, 'core_sensors') or {} -%}
+                    {%- set points_sensor = core_sensors.get('points_eid') -%}
+                    {%- set points_icon = (state_attr(points_sensor, 'icon') if points_sensor else None) or 'mdi:star-circle' -%}
+                    {%- set translation_sensor = (state_attr(dashboard_helper, 'dashboard_helpers') or {}).get('translation_sensor_eid') -%}
+                    {%- set ui = state_attr(translation_sensor, 'ui_translations') if translation_sensor else {} -%}
+                    {%- set gamification_enabled = state_attr(dashboard_helper, 'gamification_enabled') | default(false, true) -%}
+                    {%- set ui_control = state_attr(dashboard_helper, 'ui_control') | default({}, true) -%}
+                    {%- set ui_control_key_root = 'gamification/achievements' -%}
+                    {%- set ui_control_key_header_collapsed = ui_control_key_root ~ '/header_collapse' -%}
+                    {%- set ui_root = namespace(current=ui_control if ui_control is mapping else {}) -%}
+                    {%- for segment in ui_control_key_root.split('/') -%}
+                      {%- if ui_root.current is mapping -%}
+                        {%- set ui_root.current = ui_root.current.get(segment, {}) -%}
+                      {%- else -%}
+                        {%- set ui_root.current = {} -%}
+                      {%- endif -%}
+                    {%- endfor -%}
+                    {%- set header_collapsed = ui_root.current.get('header_collapse', pref_default_header_collapsed) if ui_root.current is mapping else pref_default_header_collapsed -%}
+                    {%- set header_collapsed = header_collapsed | default(pref_default_header_collapsed, true) -%}
+                    {%- set integration_entry_id = state_attr(dashboard_helper, 'integration_entry_id') -%}
+                    {%- set dashboard_helper_user_id = state_attr(dashboard_helper, 'user_id') -%}
+                    {%- set achievement_list = state_attr(dashboard_helper, 'achievements') | default([], true) -%}
+
+                    {%- for achievement in achievement_list -%}
+                      {%- set achievement_eid = achievement.get('eid') if achievement is mapping else achievement -%}
+                      {%- if achievement_eid in ['', 'None', 'unknown', 'unavailable', none] -%}
+                        {%- continue -%}
+                      {%- endif -%}
+
+                      {%- set achievement_attrs = states[achievement_eid].attributes | default({}, true) -%}
+                      {%- set achievement_name = (achievement_attrs.get('achievement_name') or (achievement.get('name') if achievement is mapping else none) or state_attr(achievement_eid, 'friendly_name') or '') | string -%}
+                      {%- set assigned_raw = achievement_attrs.get('assigned_user_names', achievement_attrs.get('assigned_assignees')) -%}
+                      {%- set assigned_users = [] -%}
+                      {%- if assigned_raw is string -%}
+                        {%- set assigned_users = [assigned_raw] -%}
+                      {%- elif assigned_raw is iterable and assigned_raw is not string and assigned_raw is not none -%}
+                        {%- set assigned_users = assigned_raw | list -%}
+                      {%- endif -%}
+                      {%- set awarded_raw = achievement_attrs.get('awarded', false) -%}
+                      {%- set awarded = awarded_raw if awarded_raw is boolean else (awarded_raw | string | lower) == 'true' -%}
+                      {%- set target_value = achievement_attrs.get('target_value', 0) | int(default=0) -%}
+                      {%- set raw_progress = achievement_attrs.get('raw_progress', 0) | float(default=0) -%}
+                      {%- set progress_clamped = raw_progress if raw_progress >= 0 else 0 -%}
+                      {%- if target_value > 0 and progress_clamped > target_value -%}
+                        {%- set progress_clamped = target_value -%}
+                      {%- endif -%}
+                      {%- set progress_pct = ((progress_clamped / target_value) * 100) | round(1) if target_value > 0 else 0 -%}
+
+                      {%- set ns.achievements = ns.achievements + [{
+                        'entity_id': achievement_eid,
+                        'name': achievement_name,
+                        'icon': (achievement_attrs.get('icon') or 'mdi:trophy') | string,
+                        'description': (achievement_attrs.get('description') or '') | string,
+                        'criteria': (achievement_attrs.get('criteria') or '') | string,
+                        'type': (achievement_attrs.get('type') or '') | string | lower,
+                        'associated_chore': (achievement_attrs.get('associated_chore') or '') | string,
+                        'target_value': target_value,
+                        'raw_progress': raw_progress,
+                        'progress_clamped': progress_clamped,
+                        'progress_pct': progress_pct,
+                        'reward_points': achievement_attrs.get('reward_points', 0) | float(default=0),
+                        'assigned_users': assigned_users,
+                        'awarded': awarded,
+                      }] -%}
+                    {%- endfor -%}
+
+                    {%- set sorted_achievements = ns.achievements | sort(attribute='name') -%}
+
+                    {#-- 5. Render --#}
+                    {%- if gamification_enabled -%}
+                      {{
+                        {
+                          'type': 'custom:button-card',
+                          'name': ui.get('achievements', 'err-achievements'),
+                          'icon': 'mdi:trophy',
+                          'show_name': true,
+                          'show_icon': true,
+                          'tap_action': ({
+                            'action': 'call-service',
+                            'service': 'choreops.manage_ui_control',
+                            'data': {
+                              'config_entry_id': integration_entry_id,
+                              'user_id': dashboard_helper_user_id,
+                              'ui_control_action': 'remove',
+                              'key': ui_control_key_header_collapsed
+                            }
+                          } if header_collapsed and integration_entry_id not in ['', none] and dashboard_helper_user_id not in ['', none] else {
+                            'action': 'call-service',
+                            'service': 'choreops.manage_ui_control',
+                            'data': {
+                              'config_entry_id': integration_entry_id,
+                              'user_id': dashboard_helper_user_id,
+                              'ui_control_action': 'update',
+                              'key': ui_control_key_header_collapsed,
+                              'value': true
+                            }
+                          } if integration_entry_id not in ['', none] and dashboard_helper_user_id not in ['', none] else {
+                            'action': 'none'
+                          }),
+                          'hold_action': {'action': 'none'},
+                          'custom_fields': {
+                            'toggle': "<ha-icon icon='" ~ ('mdi:chevron-down' if header_collapsed else 'mdi:chevron-up') ~ "' style='width:18px;height:18px;color: var(--primary-color);'></ha-icon>"
+                          },
+                          'styles': {
+                            'card': [
+                              {'background': ('color-mix(in srgb, var(--primary-color) ' ~ pref_primary_tint_mix_pct|string ~ '%, var(--card-background-color))') if header_collapsed else 'transparent'},
+                              {'box-shadow': 'none'},
+                              {'border': '1px solid var(--divider-color)' if header_collapsed else 'none'},
+                              {'border-left': '3px solid var(--primary-color)'},
+                              {'border-bottom': '3px solid var(--primary-color)'},
+                              {'border-radius': '10px'},
+                              {'padding': '10px 12px'},
+                              {'min-height': 'unset'},
+                              {'margin-top': '5px'},
+                              {'margin-bottom': '0px'}
+                            ],
+                            'grid': [
+                              {'grid-template-areas': '"i n toggle"'},
+                              {'grid-template-columns': 'min-content 1fr min-content'},
+                              {'column-gap': '5px'},
+                              {'align-items': 'center'}
+                            ],
+                            'icon': [
+                              {'width': '18px'},
+                              {'transform': 'translateY(-2px)'},
+                              {'color': 'var(--primary-color)'}
+                            ],
+                            'name': [
+                              {'justify-self': 'start'},
+                              {'font-size': '14px'},
+                              {'font-weight': '700'},
+                              {'text-transform': 'uppercase'},
+                              {'letter-spacing': '0.4px'},
+                              {'color': 'var(--primary-text-color)'}
+                            ],
+                            'custom_fields': {
+                              'toggle': [
+                                {'justify-self': 'end'},
+                                {'align-self': 'center'}
+                              ]
+                            }
+                          }
+                        }
+                      }},
+
+                      {%- if not header_collapsed -%}
+                        {%- if sorted_achievements | length == 0 -%}
+                          {{
+                            {
+                              'type': 'custom:button-card',
+                              'name': ui.get('no_achievements_found', 'err-no_achievements_found'),
+                              'label': ui.get('start_achievement_prompt', 'err-start_achievement_prompt'),
+                              'icon': 'mdi:trophy',
+                              'show_name': true,
+                              'show_icon': true,
+                              'show_label': true,
+                              'tap_action': {'action': 'none'},
+                              'styles': {
+                                'card': [
+                                  {'background': 'var(--secondary-background-color)'},
+                                  {'box-shadow': 'none'},
+                                  {'border': '1px solid var(--divider-color)'},
+                                  {'border-radius': '12px'},
+                                  {'padding': '10px 12px'}
+                                ],
+                                'grid': [
+                                  {'grid-template-areas': '"i n" "i l"'},
+                                  {'grid-template-columns': 'min-content 1fr'},
+                                  {'gap': '8px'},
+                                  {'align-items': 'center'}
+                                ],
+                                'icon': [
+                                  {'width': '18px'},
+                                  {'color': 'var(--secondary-text-color)'}
+                                ],
+                                'name': [
+                                  {'justify-self': 'start'},
+                                  {'font-size': '13px'},
+                                  {'font-weight': '600'},
+                                  {'color': 'var(--secondary-text-color)'}
+                                ],
+                                'label': [
+                                  {'justify-self': 'start'},
+                                  {'font-size': '11px'},
+                                  {'line-height': '1.3'},
+                                  {'color': 'var(--secondary-text-color)'},
+                                  {'white-space': 'normal'}
+                                ]
+                              }
+                            }
+                          }},
+                        {%- else -%}
+                          {%- for achievement in sorted_achievements -%}
+                          {%- set status_label = ui.get('earned', 'err-earned') if achievement.awarded else ui.get('in_progress', 'err-in_progress') -%}
+                          {%- set status_color = 'var(--success-color)' if achievement.awarded else 'var(--primary-color)' -%}
+                          {%- set type_label =
+                            ui.get('streak', 'err-streak') if achievement.type == 'chore_streak'
+                            else ui.get('per_day_goal', 'err-per_day_goal') if achievement.type == 'daily_minimum'
+                            else ui.get('total_chores', 'err-total_chores') if achievement.type in ['total_within_window', 'total_chores']
+                            else ui.get(achievement.type, achievement.type | replace('_', ' ') | title)
+                          -%}
+                          {%- set description_safe = achievement.description | trim | replace('&', '&amp;') | replace('<', '&lt;') | replace('>', '&gt;') -%}
+                          {%- set criteria_safe = achievement.criteria | trim | replace('&', '&amp;') | replace('<', '&lt;') | replace('>', '&gt;') -%}
+                          {%- set chore_safe = achievement.associated_chore | trim | replace('&', '&amp;') | replace('<', '&lt;') | replace('>', '&gt;') -%}
+                          {%- set assigned_safe = achievement.assigned_users | join(', ') | replace('&', '&amp;') | replace('<', '&lt;') | replace('>', '&gt;') -%}
+
+                          {%- set details_line = '' -%}
+                          {%- if description_safe | length > 0 -%}
+                            {%- set details_line = description_safe -%}
+                          {%- endif -%}
+                          {%- if criteria_safe | length > 0 -%}
+                            {%- set details_line = details_line ~ ('<br>' if details_line | length > 0 else '') ~ "<span style='font-size:11px;line-height:1.3;'>📌 " ~ ui.get('criteria', 'err-criteria') ~ ": " ~ criteria_safe ~ "</span>" -%}
+                          {%- endif -%}
+                          {%- if achievement.reward_points > 0 -%}
+                            {%- set reward_text = ('%.1f' | format(achievement.reward_points)) | regex_replace('\.?0+$', '') -%}
+                            {%- set details_line = details_line ~ ('<br>' if details_line | length > 0 else '') ~ "<span style='display:inline-block;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:11px;font-weight:700;color:var(--primary-text-color);'><ha-icon icon='mdi:diamond-stone' style='width:12px;height:12px;color:var(--primary-color);transform:translateY(-1px);'></ha-icon> " ~ ui.get('reward', 'err-reward') ~ ": " ~ reward_text ~ " <ha-icon icon='" ~ points_icon ~ "' style='width:12px;height:12px;color:var(--primary-color);transform:translateY(-2px);'></ha-icon></span>" -%}
+                          {%- endif -%}
+
+                          {%- set status_row = "<b style='color:" ~ status_color ~ ";'>" ~ ('✅ ' if achievement.awarded else '⏳ ') ~ status_label | upper ~ "</b>" -%}
+                          {%- set goal_text = '' -%}
+                          {%- if achievement.target_value > 0 -%}
+                            {%- set goal_text = ui.get('goal', 'err-goal') ~ ': ' ~ achievement.target_value|string ~ ' • ' ~ type_label -%}
+                          {%- elif type_label | length > 0 -%}
+                            {%- set goal_text = type_label -%}
+                          {%- endif -%}
+                          {%- if goal_text | length > 0 -%}
+                            {%- set status_row = status_row ~ " <span style='opacity:0.7;'>•</span> <span>🎯 " ~ goal_text ~ "</span>" -%}
+                          {%- endif -%}
+
+                          {%- set progress_html = '' -%}
+                          {%- if not achievement.awarded and achievement.target_value > 0 -%}
+                            {%- set progress_pct = achievement.progress_pct | float(default=0) -%}
+                            {%- if progress_pct < 0 -%}{%- set progress_pct = 0 -%}{%- endif -%}
+                            {%- if progress_pct > 100 -%}{%- set progress_pct = 100 -%}{%- endif -%}
+                            {%- set progress_display = ('%.0f' | format(progress_pct)) -%}
+                            {%- set progress_html = "<div style='margin-top:2px;padding:8px 10px;border-radius:8px;background:var(--secondary-background-color);border:1px solid var(--divider-color);'><div style='display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:11px;'><span><ha-icon icon='mdi:trophy' style='width:14px;height:14px;color:" ~ status_color ~ ";transform:translateY(-1px);'></ha-icon> " ~ ui.get('progress', 'err-progress') ~ "</span><span style='font-weight:600;'>" ~ (achievement.progress_clamped | round(0) | int | string) ~ "/" ~ achievement.target_value|string ~ "</span></div><div style='margin-top:6px;display:flex;align-items:center;gap:6px;'><div style='flex:1;height:6px;background:var(--divider-color);border-radius:999px;overflow:hidden;'><div style='width:" ~ progress_display ~ "%;height:100%;background:" ~ status_color ~ ";border-radius:999px;'></div></div><span style='font-size:10px;color:var(--secondary-text-color);line-height:1;'>" ~ progress_display ~ "%</span></div></div>" -%}
+                          {%- endif -%}
+
+                          {%- set stats_left = '' -%}
+                          {%- if chore_safe | length > 0 -%}
+                            {%- set stats_left = "🛠 " ~ ui.get('related_chore', 'err-related_chore') ~ ": " ~ chore_safe -%}
+                          {%- elif criteria_safe | length > 0 and details_line | length == 0 -%}
+                            {%- set stats_left = "📌 " ~ ui.get('criteria', 'err-criteria') ~ ": " ~ criteria_safe -%}
+                          {%- endif -%}
+                          {%- set stats_right = status_label -%}
+                          {%- set stats_html = '' -%}
+                          {%- if stats_left | length > 0 or stats_right | length > 0 -%}
+                            {%- set stats_html = "<div style='display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:start;column-gap:8px;width:100%;'><span style='min-width:0;display:block;white-space:normal;'>" ~ stats_left ~ "</span><span style='display:block;font-size:10px;font-weight:700;color:" ~ status_color ~ ";text-align:right;white-space:nowrap;justify-self:end;'>" ~ stats_right ~ "</span></div>" -%}
+                          {%- endif -%}
+
+                          {{
+                            {
+                              'type': 'custom:button-card',
+                              'entity': achievement.entity_id,
+                              'name': achievement.name,
+                              'icon': achievement.icon,
+                              'show_name': true,
+                              'show_icon': true,
+                              'show_label': false,
+                              'tap_action': {'action': 'more-info'},
+                              'custom_fields': {
+                                'details': status_row ~ ('<br>' ~ details_line if details_line | length > 0 else ''),
+                                'progress': progress_html,
+                                'stats': stats_html
+                              },
+                              'styles': {
+                                'card': [
+                                  {'padding': '12px 14px'},
+                                  {'border-radius': '14px'},
+                                  {'background-color': 'var(--card-background-color)'},
+                                  {'border': ('1px solid var(--success-color)' if achievement.awarded else '1px solid var(--divider-color)')},
+                                  {'box-shadow': ('0 2px 6px rgba(0,0,0,0.08)' if achievement.awarded else 'none')}
+                                ],
+                                'grid': [
+                                  {'grid-template-areas': '"i n" "i details" "progress progress" "stats stats"'},
+                                  {'grid-template-columns': '44px 1fr'},
+                                  {'row-gap': '4px'},
+                                  {'column-gap': '10px'}
+                                ],
+                                'icon': [
+                                  {'width': '38px'},
+                                  {'height': '38px'},
+                                  {'color': status_color}
+                                ],
+                                'name': [
+                                  {'justify-self': 'start'},
+                                  {'font-size': '16px'},
+                                  {'font-weight': '600'},
+                                  {'color': 'var(--primary-text-color)'}
+                                ],
+                                'custom_fields': {
+                                  'details': [
+                                    {'justify-self': 'start'},
+                                    {'font-size': '11px'},
+                                    {'font-weight': '600'},
+                                    {'color': 'var(--secondary-text-color)'},
+                                    {'text-align': 'left'},
+                                    {'white-space': 'normal'},
+                                    {'line-height': '1.3'},
+                                    {'display': 'block'}
                                   ],
                                   'progress': [
                                     {'width': '100%'},

@@ -34,13 +34,24 @@
   - Grid columns for chore cards on wide screens when using the `kids` row variant.
   - Allowed: positive integer.
 
+- `pref_settings_column_count_mobile` (default: `3`)
+  - Grid columns for Chores settings buttons on narrow screens.
+  - Allowed: positive integer.
+
+- `pref_settings_column_count_wide` (default: `10`)
+  - Grid columns for Chores settings buttons on wide screens.
+  - Allowed: positive integer.
+
 - `pref_use_overdue_grouping` (default: `true`)
   - Shows a dedicated overdue group.
   - Allowed: `true`, `false`.
 
-- `pref_use_today_grouping` (default: `true`)
-  - Splits today chores into AM and PM groups.
-  - Allowed: `true`, `false`.
+- `pref_today_grouping_mode` (default: `today_morning`)
+  - Controls today grouping behavior.
+  - `off` puts today chores into the fallback group.
+  - `today` shows one Today group.
+  - `today_morning` shows both Today and Morning grouping.
+  - Allowed: `off`, `today`, `today_morning`.
 
 - `pref_include_daily_recurring_in_today` (default: `true`)
   - Keeps recurring daily chores in today groups.

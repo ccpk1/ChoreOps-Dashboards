@@ -14,11 +14,11 @@
 			{#-- Skip this chore --#}
 
 		{#-- Step 3: Handle overdue chores (highest priority) --#}
-		{%- elif chore_status == 'overdue' and pref_use_overdue_grouping -%}
+		{%- elif chore_status == 'overdue' and effective_use_overdue_grouping -%}
 			{%- set ns.overdue_buttons = ns.overdue_buttons + [chore_sensor_id] -%}
 
 		{#-- Step 4: Skip chores with labels when label grouping is enabled (they're processed separately) --#}
-		{%- elif pref_use_label_grouping and (chore_labels | default([], true) | list | length > 0) -%}
+		{%- elif effective_use_label_grouping and (chore_labels | default([], true) | list | length > 0) -%}
 			{#-- Labels take priority; processed in label grouping section below --#}
 
 		{#-- Step 5: Handle recurring filters BEFORE primary_group logic (override primary_group assignment) --#}
@@ -31,19 +31,19 @@
 			{%- set ns.other_buttons = ns.other_buttons + [chore_sensor_id] -%}
 
 		{#-- Step 6: Categorize by primary_group (time-based) --#}
-		{%- elif chore_primary_group == 'today' and pref_use_today_grouping and chore_is_today_am == true -%}
+		{%- elif chore_primary_group == 'today' and effective_use_today_grouping and effective_use_today_am_grouping and chore_is_today_am == true -%}
 			{%- set ns.am_buttons = ns.am_buttons + [chore_sensor_id] -%}
 
-		{%- elif chore_primary_group == 'today' and pref_use_today_grouping and chore_is_today_am != true -%}
+		{%- elif chore_primary_group == 'today' and effective_use_today_grouping -%}
 			{%- set ns.today_buttons = ns.today_buttons + [chore_sensor_id] -%}
 
-		{%- elif chore_primary_group == 'today' and not pref_use_today_grouping -%}
+		{%- elif chore_primary_group == 'today' and not effective_use_today_grouping -%}
 			{%- set ns.other_buttons = ns.other_buttons + [chore_sensor_id] -%}
 
-		{%- elif chore_primary_group == 'this_week' and pref_use_this_week_grouping -%}
+		{%- elif chore_primary_group == 'this_week' and effective_use_this_week_grouping -%}
 			{%- set ns.this_week_buttons = ns.this_week_buttons + [chore_sensor_id] -%}
 
-		{%- elif chore_primary_group == 'this_week' and not pref_use_this_week_grouping -%}
+		{%- elif chore_primary_group == 'this_week' and not effective_use_this_week_grouping -%}
 			{%- set ns.other_buttons = ns.other_buttons + [chore_sensor_id] -%}
 
 		{#-- Step 7: Default fallback --#}
@@ -55,7 +55,7 @@
 {%- endfor -%}
 
 {#-- Build Label Groups from chores_by_label --#}
-{%- if pref_use_label_grouping -%}
+{%- if effective_use_label_grouping -%}
 	{#-- Determine label order: use pref_label_display_order if provided, else all labels alphabetically --#}
 	{%- if pref_label_display_order | length > 0 -%}
 		{%- set ns.label_order = pref_label_display_order -%}

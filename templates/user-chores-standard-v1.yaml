@@ -53,8 +53,23 @@ views:
 
                   << template_snippets.user_override_helper >>
 
+                  {%- set pref_primary_tint_mix_pct = 14 -%}  {#-- Percent of var(--primary-color) mixed into the welcome-card background when fill is enabled. Allowed: 0-100. --#}
+
+                  {%- set pref_show_header_background = false -%}  {#-- Set to false to remove the welcome-card background fill and leave it transparent. Allowed: true, false. --#}
+
+                  {%- set pref_show_header_thin_border = true -%}  {#-- Set to false to remove the thin outer border line. Accent borders are unaffected. Allowed: true, false. --#}
+
 
                   {#-- 2. Dynamic Lookups & Validations --#}
+
+                  {%- set pref_primary_tint_mix_pct = pref_primary_tint_mix_pct | int(default=14) -%}
+                  {%- set pref_show_header_background = (pref_show_header_background | default('true') | string | lower) == 'true' -%}
+                  {%- set pref_show_header_thin_border = (pref_show_header_thin_border | default('true') | string | lower) == 'true' -%}
+                  {%- if pref_primary_tint_mix_pct < 0 -%}
+                    {%- set pref_primary_tint_mix_pct = 0 -%}
+                  {%- elif pref_primary_tint_mix_pct > 100 -%}
+                    {%- set pref_primary_tint_mix_pct = 100 -%}
+                  {%- endif -%}
 
                   << template_snippets.user_setup >>
 
@@ -131,8 +146,8 @@ views:
                           'card': [
                             {'padding': '16px 20px'},
                             {'border-radius': '16px'},
-                            {'border': '1px solid var(--divider-color)'},
-                            {'background-color': 'var(--card-background-color)'},
+                            {'border': '1px solid color-mix(in srgb, var(--primary-color) ' ~ pref_primary_tint_mix_pct|string ~ '%, var(--divider-color))' if pref_show_header_thin_border else 'none'},
+                            {'background-color': ('color-mix(in srgb, var(--primary-color) ' ~ pref_primary_tint_mix_pct|string ~ '%, var(--card-background-color))') if pref_show_header_background else 'transparent'},
                             {'box-shadow': 'none'}
                           ],
                           'grid': [
@@ -150,6 +165,7 @@ views:
                     }},
 
                   {%- endif -%}
+
         - type: grid
           square: false
           columns: 1
@@ -179,6 +195,10 @@ views:
 
                   {%- set pref_ui_control_key_root = 'chores' -%}
 
+                  {%- set pref_settings_column_count_mobile = 3 -%}
+
+                  {%- set pref_settings_column_count_wide = 8 -%}
+
                   {%- set pref_column_count_mobile_standard = 1 -%}
 
                   {%- set pref_column_count_mobile_kids = 2 -%}
@@ -189,7 +209,7 @@ views:
 
                   {%- set pref_use_overdue_grouping = true -%}
 
-                  {%- set pref_use_today_grouping = true -%}
+                  {%- set pref_today_grouping_mode = 'today_morning' -%}
 
                   {%- set pref_include_daily_recurring_in_today = true -%}
 
