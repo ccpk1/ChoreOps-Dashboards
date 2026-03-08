@@ -112,7 +112,7 @@ Recommended ranges:
 - `pref_ui_control_key_root` (default: `gamification/chores`)
   - Sets the `ui_control` branch used by this chores card inside the Gamification Premier template.
   - Override this when you want multiple chore-card instances for the same user to keep different saved settings.
-  - Example custom values: `gamification/chores`, `gamification/chores_compact`, `dashboards/user_main/gamefull_chores`.
+  - Example custom values: `gamification/chores`, `gamification/chores_compact`, `dashboards/user_main/gamification_premier_chores`.
   - Use slash-delimited segments without relying on a leading slash.
 
 - `pref_chore_row_variant` (default: `standard`)
@@ -237,6 +237,14 @@ Recommended ranges:
 
 ## Card: Cumulative badges
 
+- `pref_show_next_higher_badge` (default: `true`)
+  - Controls whether the next higher cumulative badge card is shown.
+  - Allowed: `true`, `false`.
+
+- `pref_show_next_lower_badge` (default: `true`)
+  - Controls whether the next lower earned cumulative badge card is shown.
+  - Allowed: `true`, `false`.
+
 - `pref_primary_tint_mix_pct` (default: `14`)
   - Sets the tint strength used by the main Cumulative section header when that header is collapsed.
   - Allowed: integer from `0` to `100`.
@@ -265,6 +273,15 @@ Recommended ranges:
   - The template uses `ui_control_key_root = gamification/cumulative` and stores the header state at `header_collapse` under that root.
   - Default behavior comes from `pref_default_header_collapsed` when no stored override exists.
   - Expanding again removes the stored override so the card falls back to the template default state.
+
+- Cumulative header gear panel
+  - When the Cumulative header is expanded, a gear button appears in the header.
+  - The gear toggles a small configuration panel that stores per-user choices in `ui_control` under `gamification/cumulative`.
+  - Current panel controls:
+    - `show_next_higher_badge` to show or hide the next higher badge card
+    - `show_next_lower_badge` to show or hide the next lower earned badge card
+  - These settings override the template defaults only for the current user.
+  - Removing the stored key falls back to the template preferences again.
 
 ## Card: Periodic badges
 
