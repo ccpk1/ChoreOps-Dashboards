@@ -276,6 +276,299 @@ views:
               card_param: cards
               filter:
                 template: |-
+                  {#-- ===== SHOWCASE CARD ===== --#}
+
+                  << template_snippets.meta_stamp >>
+
+
+                  {#-- 1. User configuration --#}
+
+                  << template_snippets.user_override_helper >>
+
+                  {%- set pref_primary_tint_mix_pct = 14 -%}
+
+                  {%- set pref_show_header_background = true -%}
+
+                  {%- set pref_show_header_thin_border = true -%}
+
+
+                  {#-- 2. Dynamic lookups & validations --#}
+
+                  {%- set pref_primary_tint_mix_pct = pref_primary_tint_mix_pct | int(default=14) -%}
+                  {%- set pref_show_header_background = (pref_show_header_background | default('true') | string | lower) == 'true' -%}
+                  {%- set pref_show_header_thin_border = (pref_show_header_thin_border | default('true') | string | lower) == 'true' -%}
+                  {%- if pref_primary_tint_mix_pct < 0 -%}
+                    {%- set pref_primary_tint_mix_pct = 0 -%}
+                  {%- elif pref_primary_tint_mix_pct > 100 -%}
+                    {%- set pref_primary_tint_mix_pct = 100 -%}
+                  {%- endif -%}
+
+                  << template_snippets.user_setup >>
+
+                  << template_snippets.user_validation >>
+
+                  {%- if not skip_render -%}
+
+                    {%- set core_sensors = state_attr(dashboard_helper, 'core_sensors') or {} -%}
+                    {%- set points_sensor = core_sensors.get('points_eid') -%}
+                    {%- set all_time_sensor = core_sensors.get('chores_eid') -%}
+                    {%- set highest_badge_entity = core_sensors.get('badges_eid') -%}
+                    {%- set translation_sensor = (state_attr(dashboard_helper, 'dashboard_helpers') or {}).get('translation_sensor_eid') -%}
+                    {%- set ui = (state_attr(translation_sensor, 'ui_translations') if translation_sensor else {}) or {} -%}
+                    {%- set gamification_enabled = state_attr(dashboard_helper, 'gamification_enabled') | default(false, true) -%}
+                    {%- set badge_list = state_attr(dashboard_helper, 'badges') | default([], true) -%}
+                    {%- set achievement_list = state_attr(dashboard_helper, 'achievements') | default([], true) -%}
+                    {%- set bonus_list = state_attr(dashboard_helper, 'bonuses') | default([], true) -%}
+                    {%- set penalty_list = state_attr(dashboard_helper, 'penalties') | default([], true) -%}
+                    {%- set highest_badge_attrs = states[highest_badge_entity].attributes | default({}, true) if highest_badge_entity else {} -%}
+
+                    {%- set points = (states(points_sensor) | int(default=0)) if points_sensor else 0 -%}
+                    {%- set points_earned_all_time = (state_attr(points_sensor, 'point_stat_points_earned_all_time') | int(default=0)) if points_sensor else 0 -%}
+                    {%- set points_by_source_all_time = (state_attr(points_sensor, 'point_stat_points_by_source_all_time') if points_sensor else {}) or {} -%}
+                    {%- set bonus_points_all_time = (points_by_source_all_time.get('bonuses', 0) | round(0) | int) if points_by_source_all_time is mapping else 0 -%}
+                    {%- set penalty_points_all_time = (points_by_source_all_time.get('penalties', 0) | round(0) | int) if points_by_source_all_time is mapping else 0 -%}
+                    {%- set points_label = (state_attr(points_sensor, 'unit_of_measurement') if points_sensor else None) or 'Points' -%}
+                    {%- set points_icon = (state_attr(points_sensor, 'icon') if points_sensor else None) or 'mdi:star-circle' -%}
+                    {%- set points_multiplier = (state_attr(points_sensor, 'points_multiplier') | float(default=1)) if points_sensor else 1 -%}
+                    {%- set all_time_completed = (state_attr(all_time_sensor, 'chore_stat_approved_all_time') | int(default=0)) if all_time_sensor else 0 -%}
+                    {%- set highest_badge = ((states(highest_badge_entity) if highest_badge_entity else 'None') or 'None') -%}
+                    {%- set highest_badge_icon = (state_attr(highest_badge_entity, 'icon') if highest_badge_entity else None) or 'mdi:medal-outline' -%}
+                    {%- set highest_badge_display = ui.get('none', 'err-none') if highest_badge in ['None', 'unknown', 'Unknown', 'unavailable'] else highest_badge -%}
+                    {%- set points_multiplier_text = (points_multiplier | round(0) | int) | string -%}
+                    {%- set safe_name = (name | string | replace('&', '&amp;') | replace('<', '&lt;') | replace('>', '&gt;')) -%}
+                    {%- set rank_status = (highest_badge_attrs.get('badge_status', 'active') | string | lower) if highest_badge_attrs is mapping else 'active' -%}
+                    {%- set rank_points_to_next = highest_badge_attrs.get('points_to_next_badge', 0) | int(default=0) if highest_badge_attrs is mapping else 0 -%}
+                    {%- set rank_cycle_points = highest_badge_attrs.get('cycle_points', 0) | int(default=0) if highest_badge_attrs is mapping else 0 -%}
+                    {%- set rank_maintenance_required = highest_badge_attrs.get('maintenance_points_required', 0) | int(default=0) if highest_badge_attrs is mapping else 0 -%}
+                    {%- set rank_maintenance_remaining = highest_badge_attrs.get('maintenance_points_remaining', 0) | int(default=0) if highest_badge_attrs is mapping else 0 -%}
+                    {%- set current_rank_eid = highest_badge_attrs.get('current_badge_eid') | default('', true) if highest_badge_attrs is mapping else '' -%}
+                    {%- set highest_earned_rank_eid = highest_badge_attrs.get('highest_earned_badge_eid') | default('', true) if highest_badge_attrs is mapping else '' -%}
+                    {%- set next_rank_eid = highest_badge_attrs.get('next_higher_badge_eid') | default('', true) if highest_badge_attrs is mapping else '' -%}
+                    {%- set maintenance_rank_eid = highest_earned_rank_eid if rank_status == 'demoted' and highest_earned_rank_eid not in ['', 'None', 'unknown', 'unavailable', none] else current_rank_eid -%}
+                    {%- set has_any_rank = current_rank_eid not in ['', 'None', 'unknown', 'unavailable', none] -%}
+
+                    {%- set ns = namespace(earned_badges_html='', earned_badges_count=0, total_badge_awards=0) -%}
+                    {%- for badge in badge_list -%}
+                      {%- if badge is mapping -%}
+                        {%- set badge_earned_raw = badge.get('earned', false) -%}
+                        {%- set badge_earned = badge_earned_raw if badge_earned_raw is boolean else (badge_earned_raw | string | lower) == 'true' -%}
+                        {%- if badge_earned -%}
+                          {%- set badge_entity = badge.get('eid') -%}
+                          {%- set badge_name_raw = ((badge.get('name') or state_attr(badge_entity, 'friendly_name') or ui.get('badge', 'err-badge')) | string | trim) -%}
+                          {%- set badge_name = badge_name_raw[8:] if badge_name_raw[:8] == 'Badge - ' else badge_name_raw -%}
+                          {%- set badge_name_safe = badge_name | replace('&', '&amp;') | replace('<', '&lt;') | replace('>', '&gt;') -%}
+                          {%- set badge_icon = state_attr(badge_entity, 'icon') | default('mdi:medal-outline', true) -%}
+                          {%- set badge_earned_count = badge.get('earned_count', 0) | int(default=0) -%}
+                          {%- set badge_count_badge = "<div style='position:absolute;right:-4px;bottom:-4px;min-width:20px;height:20px;padding:0 5px;border-radius:999px;background:var(--card-background-color);border:1px solid var(--divider-color);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:var(--primary-text-color);line-height:1;'>x" ~ badge_earned_count|string ~ "</div>" if badge_earned_count > 0 else "<div style='position:absolute;right:-3px;bottom:-3px;width:18px;height:18px;border-radius:999px;background:var(--primary-color);border:2px solid var(--card-background-color);display:flex;align-items:center;justify-content:center;'><ha-icon icon='mdi:check-bold' style='width:11px;height:11px;color:var(--text-primary-color,#fff);'></ha-icon></div>" -%}
+                          {%- set ns.earned_badges_count = ns.earned_badges_count + 1 -%}
+                          {%- set ns.total_badge_awards = ns.total_badge_awards + badge_earned_count -%}
+                          {%- set ns.earned_badges_html = ns.earned_badges_html ~ "<div style='display:flex;flex-direction:column;align-items:center;gap:4px;width:58px;min-width:58px;flex:0 0 auto;'><div style='position:relative;width:42px;height:42px;border-radius:50%;background:color-mix(in srgb, var(--primary-color) 12%, var(--card-background-color));border:1px solid color-mix(in srgb, var(--primary-color) 42%, var(--divider-color));display:flex;align-items:center;justify-content:center;'><ha-icon icon='" ~ badge_icon ~ "' style='width:22px;height:22px;color:var(--primary-color);transform:translateY(-1px);'></ha-icon>" ~ badge_count_badge ~ "</div><div style='width:100%;font-size:9px;line-height:1.15;text-align:center;color:var(--secondary-text-color);white-space:normal;overflow-wrap:anywhere;'>" ~ badge_name_safe ~ "</div></div>" -%}
+                        {%- endif -%}
+                      {%- endif -%}
+                    {%- endfor -%}
+
+                    {%- set badge_summary_text = ns.earned_badges_count|string ~ " • " ~ ns.total_badge_awards|string ~ " " ~ ui.get('times', 'err-times') if ns.total_badge_awards > 0 else ns.earned_badges_count|string -%}
+                    {%- set earned_badges_section = "<div style='margin-top:12px;padding-top:10px;border-top:1px solid var(--divider-color);'><div style='display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px;'><div style='display:flex;align-items:center;gap:6px;font-size:11px;font-weight:700;letter-spacing:0.35px;text-transform:uppercase;color:var(--secondary-text-color);'><ha-icon icon='mdi:medal' style='width:13px;height:13px;color:var(--primary-color);transform:translateY(-2px);'></ha-icon><span>" ~ ui.get('all_earned_badges', 'err-all_earned_badges') ~ "</span></div><div style='font-size:10px;font-weight:700;color:var(--secondary-text-color);white-space:nowrap;'>" ~ badge_summary_text ~ "</div></div><div style='display:flex;gap:10px;justify-content:flex-start;overflow-x:auto;padding-bottom:2px;scrollbar-width:none;'>" ~ ns.earned_badges_html ~ "</div></div>" if ns.earned_badges_count > 0 else '' -%}
+
+                    {%- set compact_row_base = "display:grid;grid-template-columns:18px minmax(0,max-content) minmax(0,1fr);align-items:center;column-gap:8px;padding:5px 0;" -%}
+                    {%- set compact_section_base = "margin-top:12px;padding-top:10px;border-top:1px solid var(--divider-color);" -%}
+                    {%- set compact_row_icon_wrap = "width:18px;height:18px;display:flex;align-items:center;justify-content:center;align-self:center;" -%}
+                    {%- set compact_header_row = "display:grid;grid-template-columns:1fr 18px 1fr;align-items:center;column-gap:8px;width:100%;margin:0 0 4px;font-size:11px;font-weight:700;letter-spacing:0.35px;text-transform:uppercase;color:var(--secondary-text-color);" -%}
+                    {%- set compact_header_icon_wrap = "width:18px;height:18px;display:flex;align-items:center;justify-content:center;" -%}
+
+                    {%- set rank_rows_html = '' -%}
+                    {%- if next_rank_eid not in ['', 'None', 'unknown', 'unavailable', none] and states(next_rank_eid) not in ['unknown', 'unavailable'] -%}
+                      {%- set next_rank_attrs = states[next_rank_eid].attributes | default({}, true) -%}
+                      {%- set next_rank_target = next_rank_attrs.get('target') if next_rank_attrs.get('target') is mapping else {} -%}
+                      {%- set next_rank_threshold = (next_rank_target.threshold_value | float(default=0)) if next_rank_target is mapping and next_rank_target else (next_rank_attrs.get('threshold_value', 0) | float(default=0)) -%}
+                      {%- if next_rank_threshold > 0 -%}
+                        {%- set next_rank_to_unlock = rank_points_to_next if has_any_rank else (((next_rank_threshold - points_earned_all_time) | float(default=0) | round(0, 'ceil')) | int) -%}
+                        {%- if next_rank_to_unlock < 0 -%}{%- set next_rank_to_unlock = 0 -%}{%- endif -%}
+                        {%- set next_rank_progress = next_rank_threshold - next_rank_to_unlock -%}
+                        {%- if next_rank_progress < 0 -%}{%- set next_rank_progress = 0 -%}{%- endif -%}
+                        {%- set next_rank_pct = (next_rank_progress / next_rank_threshold * 100) | round(0) | int -%}
+                        {%- if next_rank_pct > 100 -%}{%- set next_rank_pct = 100 -%}{%- endif -%}
+                        {%- set next_rank_name_raw = ((next_rank_attrs.get('badge_name') or next_rank_attrs.get('friendly_name') or ui.get('ranks', 'err-ranks')) | string | trim) -%}
+                        {%- set next_rank_name = next_rank_name_raw[8:] if next_rank_name_raw[:8] == 'Badge - ' else next_rank_name_raw -%}
+                        {%- set next_rank_name_safe = next_rank_name | replace('&', '&amp;') | replace('<', '&lt;') | replace('>', '&gt;') -%}
+                        {%- set next_rank_icon = (next_rank_attrs.get('icon') or 'mdi:medal-outline') | string -%}
+                        {%- set rank_rows_html = rank_rows_html ~ "<div style='" ~ compact_row_base ~ "'><span style='" ~ compact_row_icon_wrap ~ "'><ha-icon icon='" ~ next_rank_icon ~ "' style='width:16px;height:16px;color:var(--primary-color);transform:translateY(-4px);'></ha-icon></span><div style='min-width:0;padding-right:2px;font-size:11px;font-weight:600;color:var(--primary-text-color);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;'>" ~ next_rank_name_safe ~ "</div><div style='display:grid;grid-template-columns:minmax(84px,1fr) auto;align-items:center;column-gap:8px;min-width:0;'><div style='height:6px;background:var(--divider-color);border-radius:999px;overflow:hidden;'><div style='width:" ~ next_rank_pct|string ~ "%;height:100%;background:var(--primary-color);border-radius:999px;'></div></div><div style='font-size:10px;font-weight:700;color:var(--secondary-text-color);white-space:nowrap;'>" ~ (next_rank_progress | round(0) | int | string) ~ "/" ~ (next_rank_threshold | round(0) | int | string) ~ "</div></div></div>" -%}
+                      {%- endif -%}
+                    {%- endif -%}
+
+                    {%- if maintenance_rank_eid not in ['', 'None', 'unknown', 'unavailable', none] and states(maintenance_rank_eid) not in ['unknown', 'unavailable'] and rank_maintenance_required > 0 -%}
+                      {%- set maintenance_rank_attrs = states[maintenance_rank_eid].attributes | default({}, true) -%}
+                      {%- set maintenance_rank_name_raw = ((maintenance_rank_attrs.get('badge_name') or maintenance_rank_attrs.get('friendly_name') or ui.get('maintenance', 'err-maintenance')) | string | trim) -%}
+                      {%- set maintenance_rank_name = maintenance_rank_name_raw[8:] if maintenance_rank_name_raw[:8] == 'Badge - ' else maintenance_rank_name_raw -%}
+                      {%- set maintenance_rank_name_safe = maintenance_rank_name | replace('&', '&amp;') | replace('<', '&lt;') | replace('>', '&gt;') -%}
+                      {%- set maintenance_rank_icon = (maintenance_rank_attrs.get('icon') or 'mdi:shield-sync') | string -%}
+                      {%- set maintenance_rank_pct = (rank_cycle_points / rank_maintenance_required * 100) | round(0) | int -%}
+                      {%- if maintenance_rank_pct > 100 -%}{%- set maintenance_rank_pct = 100 -%}{%- endif -%}
+                      {%- if maintenance_rank_pct < 0 -%}{%- set maintenance_rank_pct = 0 -%}{%- endif -%}
+                      {%- set maintenance_rank_color = 'var(--warning-color)' if rank_status in ['grace', 'demoted'] else ('var(--success-color)' if rank_maintenance_remaining <= 0 else 'var(--primary-color)') -%}
+                      {%- set rank_rows_html = rank_rows_html ~ "<div style='" ~ compact_row_base ~ "'><span style='" ~ compact_row_icon_wrap ~ "'><ha-icon icon='" ~ maintenance_rank_icon ~ "' style='width:16px;height:16px;color:" ~ maintenance_rank_color ~ ";transform:translateY(-4px);'></ha-icon></span><div style='min-width:0;padding-right:2px;font-size:11px;font-weight:600;color:var(--primary-text-color);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;'>" ~ maintenance_rank_name_safe ~ "</div><div style='display:grid;grid-template-columns:minmax(84px,1fr) auto;align-items:center;column-gap:8px;min-width:0;'><div style='height:6px;background:var(--divider-color);border-radius:999px;overflow:hidden;'><div style='width:" ~ maintenance_rank_pct|string ~ "%;height:100%;background:" ~ maintenance_rank_color ~ ";border-radius:999px;'></div></div><div style='font-size:10px;font-weight:700;color:" ~ maintenance_rank_color ~ ";white-space:nowrap;'>" ~ (rank_cycle_points | round(0) | int | string) ~ "/" ~ (rank_maintenance_required | round(0) | int | string) ~ "</div></div></div>" -%}
+                    {%- endif -%}
+
+                    {%- set rank_progress_section = "<div style='" ~ compact_section_base ~ "'><div style='" ~ compact_header_row ~ "'><div></div><span style='" ~ compact_header_icon_wrap ~ "'><ha-icon icon='mdi:medal-outline' style='width:13px;height:13px;color:var(--primary-color);transform:translateY(-4px);'></ha-icon></span><div style='min-width:0;width:100%;font-size:11px;font-weight:700;letter-spacing:0.35px;text-transform:uppercase;color:var(--secondary-text-color);justify-self:stretch;text-align:right;'>" ~ ui.get('ranks', 'err-ranks') ~ "</div></div>" ~ rank_rows_html ~ "</div>" if rank_rows_html | length > 0 else '' -%}
+
+                    {%- set quest_ns = namespace(rows_html='', count=0) -%}
+                    {%- for badge in badge_list -%}
+                      {%- if badge is mapping and quest_ns.count < 3 -%}
+                        {%- set quest_eid = badge.get('eid') -%}
+                        {%- set quest_type = (badge.get('badge_type') | string | lower) -%}
+                        {%- if quest_type in ['periodic', 'daily', 'special_occasion'] and quest_eid not in ['', 'None', 'unknown', 'unavailable', none] and states(quest_eid) not in ['unknown', 'unavailable'] -%}
+                          {%- set quest_attrs = states[quest_eid].attributes | default({}, true) -%}
+                          {%- set quest_status = ((quest_attrs.get('status') or badge.get('status') or 'in_progress') | string | lower) -%}
+                          {%- set quest_progress = states(quest_eid) | float(default=0) -%}
+                          {%- set quest_pct = 0 if quest_progress < 0 else (100 if quest_progress > 100 else (quest_progress | round(0) | int)) -%}
+                          {%- set quest_start = ((quest_attrs.get('start_date') or ((quest_attrs.get('reset_schedule') if quest_attrs.get('reset_schedule') is mapping else {}).get('start_date')) or '') | string | regex_replace('T.*$', '')) -%}
+                          {%- set quest_end = ((quest_attrs.get('end_date') or ((quest_attrs.get('reset_schedule') if quest_attrs.get('reset_schedule') is mapping else {}).get('end_date')) or '') | string | regex_replace('T.*$', '')) -%}
+                          {%- set quest_today = now().strftime('%Y-%m-%d') -%}
+                          {%- set quest_window_active = false -%}
+                          {%- if quest_start | length > 0 and quest_end | length > 0 -%}
+                            {%- set quest_window_active = quest_today >= quest_start and quest_today <= quest_end -%}
+                          {%- elif quest_start | length > 0 -%}
+                            {%- set quest_window_active = quest_today >= quest_start -%}
+                          {%- elif quest_end | length > 0 -%}
+                            {%- set quest_window_active = quest_today <= quest_end -%}
+                          {%- endif -%}
+                          {%- set quest_has_window = quest_start | length > 0 or quest_end | length > 0 -%}
+                          {%- set quest_is_active = quest_window_active if quest_has_window else (quest_status in ['in_progress', 'active'] or (quest_progress > 0 and quest_progress <= 100)) -%}
+                          {%- if quest_is_active and (quest_window_active or quest_status not in ['locked', 'inactive']) -%}
+                            {%- set quest_name_raw = ((quest_attrs.get('badge_name') or badge.get('name') or state_attr(quest_eid, 'friendly_name') or ui.get('quests', 'err-quests')) | string | trim) -%}
+                            {%- set quest_name = quest_name_raw[8:] if quest_name_raw[:8] == 'Badge - ' else quest_name_raw -%}
+                            {%- set quest_name_safe = quest_name | replace('&', '&amp;') | replace('<', '&lt;') | replace('>', '&gt;') -%}
+                            {%- set quest_icon = (quest_attrs.get('icon') or 'mdi:calendar-refresh-outline') | string -%}
+                            {%- set quest_ns.count = quest_ns.count + 1 -%}
+                            {%- set quest_ns.rows_html = quest_ns.rows_html ~ "<div style='" ~ compact_row_base ~ "'><span style='" ~ compact_row_icon_wrap ~ "'><ha-icon icon='" ~ quest_icon ~ "' style='width:16px;height:16px;color:var(--primary-color);transform:translateY(-4px);'></ha-icon></span><div style='min-width:0;padding-right:2px;font-size:11px;font-weight:600;color:var(--primary-text-color);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;'>" ~ quest_name_safe ~ "</div><div style='display:grid;grid-template-columns:minmax(84px,1fr) auto;align-items:center;column-gap:8px;min-width:0;'><div style='height:6px;background:var(--divider-color);border-radius:999px;overflow:hidden;'><div style='width:" ~ quest_pct|string ~ "%;height:100%;background:var(--primary-color);border-radius:999px;'></div></div><div style='font-size:10px;font-weight:700;color:var(--secondary-text-color);white-space:nowrap;'>" ~ quest_pct|string ~ "%</div></div></div>" -%}
+                          {%- endif -%}
+                        {%- endif -%}
+                      {%- endif -%}
+                    {%- endfor -%}
+                    {%- set quest_progress_section = "<div style='" ~ compact_section_base ~ "'><div style='" ~ compact_header_row ~ "'><div></div><span style='" ~ compact_header_icon_wrap ~ "'><ha-icon icon='mdi:calendar-refresh-outline' style='width:13px;height:13px;color:var(--primary-color);transform:translateY(-4px);'></ha-icon></span><div style='min-width:0;width:100%;font-size:11px;font-weight:700;letter-spacing:0.35px;text-transform:uppercase;color:var(--secondary-text-color);justify-self:stretch;text-align:right;'>" ~ ui.get('quests', 'err-quests') ~ "</div></div>" ~ quest_ns.rows_html ~ "</div>" if quest_ns.rows_html | length > 0 else '' -%}
+
+                    {%- set achievement_ns = namespace(rows_html='', count=0) -%}
+                    {%- for achievement in achievement_list -%}
+                      {%- if achievement is mapping and achievement_ns.count < 3 -%}
+                        {%- set achievement_eid = achievement.get('eid') -%}
+                        {%- if achievement_eid not in ['', 'None', 'unknown', 'unavailable', none] and states(achievement_eid) not in ['unknown', 'unavailable'] -%}
+                          {%- set achievement_attrs = states[achievement_eid].attributes | default({}, true) -%}
+                          {%- set achievement_awarded_raw = achievement_attrs.get('awarded', false) -%}
+                          {%- set achievement_awarded = achievement_awarded_raw if achievement_awarded_raw is boolean else (achievement_awarded_raw | string | lower) == 'true' -%}
+                          {%- set achievement_target = achievement_attrs.get('target_value', 0) | int(default=0) -%}
+                          {%- set achievement_progress = achievement_attrs.get('raw_progress', 0) | float(default=0) -%}
+                          {%- set achievement_progress_clamped = 0 if achievement_progress < 0 else achievement_progress -%}
+                          {%- if achievement_target > 0 and achievement_progress_clamped > achievement_target -%}
+                            {%- set achievement_progress_clamped = achievement_target -%}
+                          {%- endif -%}
+                          {%- set achievement_pct = ((achievement_progress_clamped / achievement_target) * 100) | round(0) | int if achievement_target > 0 else 0 -%}
+                          {%- if not achievement_awarded and achievement_target > 0 -%}
+                            {%- set achievement_name = ((achievement_attrs.get('achievement_name') or achievement.get('name') or state_attr(achievement_eid, 'friendly_name') or ui.get('achievements', 'err-achievements')) | string | trim) -%}
+                            {%- set achievement_name_safe = achievement_name | replace('&', '&amp;') | replace('<', '&lt;') | replace('>', '&gt;') -%}
+                            {%- set achievement_icon = (achievement_attrs.get('icon') or 'mdi:trophy') | string -%}
+                            {%- set achievement_ns.count = achievement_ns.count + 1 -%}
+                            {%- set achievement_ns.rows_html = achievement_ns.rows_html ~ "<div style='" ~ compact_row_base ~ "'><span style='" ~ compact_row_icon_wrap ~ "'><ha-icon icon='" ~ achievement_icon ~ "' style='width:16px;height:16px;color:var(--primary-color);transform:translateY(-4px);'></ha-icon></span><div style='min-width:0;padding-right:2px;font-size:11px;font-weight:600;color:var(--primary-text-color);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;'>" ~ achievement_name_safe ~ "</div><div style='display:grid;grid-template-columns:minmax(84px,1fr) auto;align-items:center;column-gap:8px;min-width:0;'><div style='height:6px;background:var(--divider-color);border-radius:999px;overflow:hidden;'><div style='width:" ~ achievement_pct|string ~ "%;height:100%;background:var(--primary-color);border-radius:999px;'></div></div><div style='font-size:10px;font-weight:700;color:var(--secondary-text-color);white-space:nowrap;'>" ~ (achievement_progress_clamped | round(0) | int | string) ~ "/" ~ achievement_target|string ~ "</div></div></div>" -%}
+                          {%- endif -%}
+                        {%- endif -%}
+                      {%- endif -%}
+                    {%- endfor -%}
+                    {%- set achievement_progress_section = "<div style='" ~ compact_section_base ~ "'><div style='" ~ compact_header_row ~ "'><div></div><span style='" ~ compact_header_icon_wrap ~ "'><ha-icon icon='mdi:trophy' style='width:13px;height:13px;color:var(--primary-color);transform:translateY(-4px);'></ha-icon></span><div style='min-width:0;width:100%;font-size:11px;font-weight:700;letter-spacing:0.35px;text-transform:uppercase;color:var(--secondary-text-color);justify-self:stretch;text-align:right;'>" ~ ui.get('achievements', 'err-achievements') ~ "</div></div>" ~ achievement_ns.rows_html ~ "</div>" if achievement_ns.rows_html | length > 0 else '' -%}
+
+                    {%- set bonus_ns = namespace(rows_html='', count=0, total_points=0, total_applied=0) -%}
+                    {%- for bonus in bonus_list | sort(attribute='applied', reverse=true) -%}
+                      {%- if bonus is mapping -%}
+                        {%- set bonus_applied = bonus.get('applied', 0) | int(default=0) -%}
+                        {%- set bonus_points = bonus.get('points', 0) | int(default=0) -%}
+                        {%- if bonus_applied > 0 -%}
+                          {%- set bonus_ns.total_applied = bonus_ns.total_applied + bonus_applied -%}
+                          {%- set bonus_ns.total_points = bonus_ns.total_points + (bonus_points * bonus_applied) -%}
+                        {%- endif -%}
+                        {%- if bonus_applied > 0 and bonus_ns.count < 2 -%}
+                          {%- set bonus_name = ((bonus.get('name') or ui.get('bonus', 'err-bonus')) | string | trim) -%}
+                          {%- set bonus_name_safe = bonus_name | replace('&', '&amp;') | replace('<', '&lt;') | replace('>', '&gt;') -%}
+                          {%- set bonus_ns.count = bonus_ns.count + 1 -%}
+                          {%- set bonus_button_eid = bonus.get('eid') if bonus is mapping else none -%}
+                          {%- set bonus_icon = (state_attr(bonus_button_eid, 'icon') if bonus_button_eid else none) | default('mdi:gift', true) -%}
+                          {%- set bonus_icon_html = "<ha-icon icon='" ~ bonus_icon ~ "' style='width:15px;height:15px;color:var(--success-color);transform:translateY(-4px);'></ha-icon>" if bonus_icon[:4] == 'mdi:' else "<span style='font-size:13px;line-height:1;color:var(--success-color);transform:translateY(-2px);'>✨</span>" -%}
+                          {%- set bonus_ns.rows_html = bonus_ns.rows_html ~ "<div style='display:grid;grid-template-columns:18px minmax(0,1fr) auto auto;align-items:center;column-gap:6px;padding:5px 0;'><span style='width:18px;height:18px;display:flex;align-items:center;justify-content:center;align-self:center;'>" ~ bonus_icon_html ~ "</span><div style='min-width:0;font-size:12px;font-weight:600;color:var(--primary-text-color);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;'>" ~ bonus_name_safe ~ "</div><div style='font-size:10px;font-weight:700;color:var(--success-color);white-space:nowrap;'>+" ~ bonus_points|string ~ "</div><div style='font-size:10px;font-weight:700;color:var(--secondary-text-color);white-space:nowrap;'>x" ~ bonus_applied|string ~ "</div></div>" -%}
+                        {%- endif -%}
+                      {%- endif -%}
+                    {%- endfor -%}
+
+                    {%- set penalty_ns = namespace(rows_html='', count=0, total_points=0, total_applied=0) -%}
+                    {%- for penalty in penalty_list | sort(attribute='applied', reverse=true) -%}
+                      {%- if penalty is mapping -%}
+                        {%- set penalty_applied = penalty.get('applied', 0) | int(default=0) -%}
+                        {%- set penalty_points = penalty.get('points', 0) | int(default=0) -%}
+                        {%- if penalty_applied > 0 -%}
+                          {%- set penalty_ns.total_applied = penalty_ns.total_applied + penalty_applied -%}
+                          {%- set penalty_ns.total_points = penalty_ns.total_points + (penalty_points * penalty_applied) -%}
+                        {%- endif -%}
+                        {%- if penalty_applied > 0 and penalty_ns.count < 2 -%}
+                          {%- set penalty_name = ((penalty.get('name') or ui.get('penalty', 'err-penalty')) | string | trim) -%}
+                          {%- set penalty_name_safe = penalty_name | replace('&', '&amp;') | replace('<', '&lt;') | replace('>', '&gt;') -%}
+                          {%- set penalty_ns.count = penalty_ns.count + 1 -%}
+                          {%- set penalty_icon = (penalty.get('icon') or 'mdi:alert-octagon-outline') | string -%}
+                          {%- set penalty_ns.rows_html = penalty_ns.rows_html ~ "<div style='display:grid;grid-template-columns:18px minmax(0,1fr) auto auto;align-items:center;column-gap:6px;padding:5px 0;'><span style='width:18px;height:18px;display:flex;align-items:center;justify-content:center;align-self:center;'><ha-icon icon='" ~ penalty_icon ~ "' style='width:15px;height:15px;color:var(--error-color);transform:translateY(-4px);'></ha-icon></span><div style='min-width:0;font-size:12px;font-weight:600;color:var(--primary-text-color);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;'>" ~ penalty_name_safe ~ "</div><div style='font-size:10px;font-weight:700;color:var(--error-color);white-space:nowrap;'>" ~ penalty_points|string ~ "</div><div style='font-size:10px;font-weight:700;color:var(--secondary-text-color);white-space:nowrap;'>x" ~ penalty_applied|string ~ "</div></div>" -%}
+                        {%- endif -%}
+                      {%- endif -%}
+                    {%- endfor -%}
+
+                    {%- set bonus_total_html = "<div style='margin-top:5px;padding-top:5px;padding-bottom:2px;border-top:1px solid color-mix(in srgb, var(--success-color) 18%, var(--divider-color));display:flex;justify-content:space-between;align-items:center;font-size:10px;font-weight:700;color:var(--secondary-text-color);'><span>" ~ ui.get('total_bonus', 'err-total_bonus') ~ "</span><span style='color:var(--success-color);'>+" ~ bonus_points_all_time|string ~ "</span></div>" -%}
+                    {%- set penalty_total_html = "<div style='margin-top:5px;padding-top:5px;padding-bottom:2px;border-top:1px solid color-mix(in srgb, var(--error-color) 18%, var(--divider-color));display:flex;justify-content:space-between;align-items:center;font-size:10px;font-weight:700;color:var(--secondary-text-color);'><span>" ~ ui.get('total_penalty', 'err-total_penalty') ~ "</span><span style='color:var(--error-color);'>" ~ penalty_points_all_time|string ~ "</span></div>" -%}
+                    {%- set adjustment_section = "<div style='" ~ compact_section_base ~ "'><div style='display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;align-items:stretch;'><div style='padding:8px 10px 12px;border-radius:14px;background:color-mix(in srgb, var(--success-color) 7%, var(--card-background-color));border:1px solid color-mix(in srgb, var(--success-color) 18%, var(--divider-color));display:flex;flex-direction:column;justify-content:space-between;overflow:hidden;'><div style='display:flex;align-items:center;justify-content:flex-start;font-size:12px;font-weight:700;letter-spacing:0.4px;text-transform:uppercase;color:var(--secondary-text-color);'><span>✨ " ~ ui.get('bonus', 'err-bonus') ~ "</span></div><div style='display:flex;flex-direction:column;justify-content:flex-end;gap:0;min-height:0;padding-top:4px;'>" ~ (bonus_ns.rows_html if bonus_ns.rows_html | length > 0 else "<div style='font-size:12px;color:var(--secondary-text-color);opacity:0.8;'>" ~ ui.get('none', 'err-none') ~ "</div>") ~ bonus_total_html ~ "</div></div><div style='padding:8px 10px 12px;border-radius:14px;background:color-mix(in srgb, var(--error-color) 6%, var(--card-background-color));border:1px solid color-mix(in srgb, var(--error-color) 18%, var(--divider-color));display:flex;flex-direction:column;justify-content:space-between;overflow:hidden;'><div style='display:flex;align-items:center;justify-content:flex-start;font-size:12px;font-weight:700;letter-spacing:0.4px;text-transform:uppercase;color:var(--secondary-text-color);'><span>💥 " ~ ui.get('penalty', 'err-penalty') ~ "</span></div><div style='display:flex;flex-direction:column;justify-content:flex-end;gap:0;min-height:0;padding-top:4px;'>" ~ (penalty_ns.rows_html if penalty_ns.rows_html | length > 0 else "<div style='font-size:12px;color:var(--secondary-text-color);opacity:0.8;'>" ~ ui.get('none', 'err-none') ~ "</div>") ~ penalty_total_html ~ "</div></div></div></div>" -%}
+
+                    {%- set highest_badge_line = "<div style='margin-top:4px;font-size:13px;line-height:1.3;color:var(--secondary-text-color);'>" ~ ui.get('highest_badge_earned', 'err-highest_badge_earned') ~ ": <span style='color:var(--primary-text-color);font-weight:600;'>" ~ (highest_badge_display | replace('&', '&amp;') | replace('<', '&lt;') | replace('>', '&gt;')) ~ "</span></div>" if highest_badge_display != ui.get('none', 'err-none') else '' -%}
+                    {%- set content_html = "<div style='display:flex;flex-direction:column;gap:0;width:100%;'><div style='display:flex;align-items:center;justify-content:space-between;gap:12px;'><div style='display:flex;align-items:center;gap:12px;min-width:0;flex:1;'><div style='width:52px;height:52px;border-radius:50%;background:color-mix(in srgb, var(--primary-color) 18%, var(--card-background-color));display:flex;align-items:center;justify-content:center;flex-shrink:0;'><ha-icon icon='" ~ highest_badge_icon ~ "' style='width:28px;height:28px;color:var(--primary-color);'></ha-icon></div><div style='min-width:0;'><div style='font-size:18px;font-weight:700;line-height:1.2;color:var(--primary-text-color);'>" ~ safe_name ~ "'s " ~ ui.get('showcase', 'err-showcase') ~ "</div>" ~ highest_badge_line ~ "</div></div><div style='text-align:right;flex-shrink:0;'><div style='display:flex;align-items:center;justify-content:flex-end;gap:6px;font-size:24px;font-weight:800;line-height:1;color:var(--primary-color);'><ha-icon icon='" ~ points_icon ~ "' style='width:22px;height:22px;transform:translateY(-3px);'></ha-icon><span>" ~ points|string ~ "</span></div><div style='margin-top:4px;font-size:10px;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:var(--secondary-text-color);'>" ~ points_label ~ "</div></div></div><div style='display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:16px;'><div style='text-align:center;padding:10px 8px;border-radius:14px;background:color-mix(in srgb, var(--primary-color) 6%, var(--card-background-color));'><div style='font-size:11px;color:var(--secondary-text-color);line-height:1.2;'>" ~ ui.get('earned_all_time', 'err-earned_all_time') ~ "</div><div style='margin-top:4px;font-size:16px;font-weight:700;color:var(--primary-text-color);'>" ~ points_earned_all_time|string ~ "</div></div><div style='text-align:center;padding:10px 8px;border-radius:14px;background:color-mix(in srgb, var(--primary-color) 6%, var(--card-background-color));'><div style='font-size:11px;color:var(--secondary-text-color);line-height:1.2;'>" ~ ui.get('total_completed', 'err-total_completed') ~ "</div><div style='margin-top:4px;font-size:16px;font-weight:700;color:var(--primary-text-color);'>" ~ all_time_completed|string ~ "</div></div><div style='text-align:center;padding:10px 8px;border-radius:14px;background:color-mix(in srgb, var(--primary-color) 6%, var(--card-background-color));'><div style='font-size:11px;color:var(--secondary-text-color);line-height:1.2;'>" ~ ui.get('multiplier', 'err-multiplier') ~ "</div><div style='margin-top:4px;font-size:16px;font-weight:700;color:" ~ ('var(--warning-color)' if points_multiplier > 1 else 'var(--primary-text-color)') ~ ";'>x" ~ points_multiplier_text ~ "</div></div></div>" ~ earned_badges_section ~ rank_progress_section ~ quest_progress_section ~ achievement_progress_section ~ adjustment_section ~ "</div>" -%}
+
+                    {%- if gamification_enabled -%}
+                      {{
+                        {
+                          'type': 'custom:button-card',
+                          'entity': points_sensor if points_sensor else all_time_sensor,
+                          'show_name': false,
+                          'show_icon': false,
+                          'tap_action': {'action': 'none'},
+                          'hold_action': {'action': 'none'},
+                          'styles': {
+                            'card': [
+                              {'background': ('color-mix(in srgb, var(--primary-color) ' ~ pref_primary_tint_mix_pct|string ~ '%, var(--card-background-color))') if pref_show_header_background else 'transparent'},
+                              {'box-shadow': 'none'},
+                              {'border': '1px solid color-mix(in srgb, var(--primary-color) ' ~ pref_primary_tint_mix_pct|string ~ '%, var(--divider-color))' if pref_show_header_thin_border else 'none'},
+                              {'border-radius': '18px'},
+                              {'padding': '16px'}
+                            ],
+                            'grid': [
+                              {'grid-template-areas': '"content"'},
+                              {'grid-template-columns': '1fr'}
+                            ],
+                            'custom_fields': {
+                              'content': [{'width': '100%'}, {'text-align': 'left'}]
+                            }
+                          },
+                          'custom_fields': {
+                            'content': content_html
+                          }
+                        }
+                      }},
+                    {%- endif -%}
+                  {%- endif -%}
+
+
+        - type: grid
+          square: false
+          columns: 1
+          grid_options:
+            columns: full
+          cards:
+            - type: custom:auto-entities
+              card:
+                square: false
+                type: grid
+                columns: 1
+              card_param: cards
+              filter:
+                template: |-
                   {#-- ===== REWARDS CARD ===== --#}
 
                   << template_snippets.meta_stamp >>
