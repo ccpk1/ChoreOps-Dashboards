@@ -246,6 +246,17 @@ Recommended ranges:
   - `true` means collapsed by default.
   - Allowed: `true`, `false`.
 
+## Card: Showcase
+
+- Showcase gear panel
+  - The showcase card has a gear button in the top-right corner.
+  - The gear toggles a small configuration panel that stores per-user choices in `ui_control` under `gamification/showcase`.
+  - Current panel controls:
+    - `hide_penalties` to hide the penalties card and let the bonus card span the full row
+    - `hide_overviews` to hide ranks, quests, achievements, bonus, and penalty sections while keeping the showcase summary and all earned badges visible
+  - These settings override the template defaults only for the current user.
+  - Removing the stored key falls back to the template preferences again.
+
 ## Card: Cumulative badges
 
 - `pref_show_next_higher_badge` (default: `true`)
