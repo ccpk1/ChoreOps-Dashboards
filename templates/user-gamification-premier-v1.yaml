@@ -93,8 +93,6 @@ views:
                     {%- set points_multiplier = (state_attr(points_sensor, 'points_multiplier') | float(default=1)) if points_sensor else 1 -%}
                     {%- set highest_badge = ((states(highest_badge_entity) if highest_badge_entity else 'None') or 'None') -%}
                     {%- set highest_badge_icon = (state_attr(highest_badge_entity, 'icon') if highest_badge_entity else None) or 'mdi:medal-outline' -%}
-                    {%- set weekly_completed = (state_attr(total_sensor, 'chore_stat_approved_week') | int(default=0)) if total_sensor else 0 -%}
-                    {%- set todays_completed = (state_attr(total_sensor, 'chore_stat_approved_today') | int(default=0)) if total_sensor else 0 -%}
                     {%- set overdue_now = (state_attr(total_sensor, 'chore_stat_current_overdue') | int(default=0)) if total_sensor else 0 -%}
                     {%- set due_today_open = (state_attr(total_sensor, 'chore_stat_current_due_today') | int(default=0)) if total_sensor else 0 -%}
 
@@ -102,39 +100,49 @@ views:
                     {%- set p_icon = points_icon | default('mdi:star', true) -%}
                     {%- set multiplier_display = points_multiplier | int if points_multiplier == (points_multiplier | int) else points_multiplier -%}
 
-                    {%- set badge_pill = '' -%}
+                    {%- set rank_pill = '' -%}
                     {%- if highest_badge not in ['None', 'unknown', 'Unknown', 'unavailable'] -%}
                       {%- set mult_text = " <span style='color: var(--warning-color);'>(x" ~ multiplier_display|string ~ ")</span>" if points_multiplier > 1 else '' -%}
-                      {%- set badge_pill = "<div style='margin-top: 7px; font-size: 12px; background: var(--secondary-background-color); padding: 4px 12px; border-radius: 14px; border: 1px solid var(--divider-color); display: inline-flex; align-items: center; justify-content: center;'><ha-icon icon='" ~ highest_badge_icon ~ "' style='width: 18px; height: 14px; margin-right: 5px; color: var(--warning-color);'></ha-icon><span style='font-weight: 600; color: var(--primary-text-color);'>" ~ highest_badge ~ mult_text ~ "</span></div>" -%}
+                      {%- set rank_pill = "<span style='font-size: 12px; background: var(--secondary-background-color); padding: 4px 12px; border-radius: 999px; border: 1px solid var(--divider-color); display: inline-flex; align-items: center; justify-content: center; white-space: nowrap;'><ha-icon icon='" ~ highest_badge_icon ~ "' style='width: 18px; height: 14px; margin-right: 5px; color: var(--warning-color);'></ha-icon><span style='font-weight: 600; color: var(--primary-text-color);'>" ~ highest_badge ~ mult_text ~ "</span></span>" -%}
+                    {%- endif -%}
+
+                    {%- if overdue_now > 0 -%}
+                      {%- set status_icon = 'mdi:alert-octagon' -%}
+                      {%- set status_color = 'var(--error-color)' -%}
+                      {%- set status_text = ui.get('overdue', 'err-overdue') ~ ': ' ~ overdue_now|string -%}
+                    {%- elif due_today_open > 0 -%}
+                      {%- set status_icon = 'mdi:calendar-clock' -%}
+                      {%- set status_color = 'var(--warning-color)' -%}
+                      {%- set status_text = ui.get('due_today', 'err-due_today') ~ ': ' ~ due_today_open|string -%}
+                    {%- else -%}
+                      {%- set status_icon = 'mdi:check-circle' -%}
+                      {%- set status_color = 'var(--success-color)' -%}
+                      {%- set status_text = ui.get('all_caught_up', 'All Caught Up!') -%}
                     {%- endif -%}
 
                     {%- set left_col =
                       "<div style='text-align: left; flex-grow: 1; min-width: 0;'>"
-                      ~ "<div style='font-size: 18px; font-weight: 600; margin-bottom: 8px; line-height: 1.2;'>👋 " ~ ui.get('welcome', 'err-welcome') ~ ", " ~ name ~ "!</div>"
-                      ~ "<div style='font-size: 12px; color: var(--secondary-text-color); display: flex; flex-direction: column; gap: 5px; line-height: 1.15;'>"
-                      ~ "<div style='display: flex; flex-wrap: wrap; gap: 10px 18px;'>"
-                      ~ "<span style='display: inline-flex; align-items: center; white-space: nowrap; color: " ~ ('var(--error-color)' if overdue_now > 0 else 'var(--secondary-text-color)') ~ ";'><ha-icon icon='mdi:alert-octagon-outline' style='width: 14px; height: 14px; margin-right: 5px; transform: translateY(-1px);'></ha-icon>" ~ ui.get('overdue', 'err-overdue') ~ ": <b style='margin-left: 4px; color: " ~ ('var(--error-color)' if overdue_now > 0 else 'var(--primary-text-color)') ~ ";'>" ~ overdue_now ~ "</b></span>"
-                      ~ "<span style='display: inline-flex; align-items: center; white-space: nowrap; color: " ~ ('var(--warning-color)' if due_today_open > 0 else 'var(--secondary-text-color)') ~ ";'><ha-icon icon='mdi:calendar-clock' style='width: 14px; height: 14px; margin-right: 5px; transform: translateY(-1px);'></ha-icon>" ~ ui.get('due_today', 'err-due_today') ~ ": <b style='margin-left: 4px; color: " ~ ('var(--warning-color)' if due_today_open > 0 else 'var(--primary-text-color)') ~ ";'>" ~ due_today_open ~ "</b></span>"
+                      ~ "<div style='display: flex; align-items: center; flex-wrap: wrap; gap: 8px 10px; margin-bottom: 10px; line-height: 1.2;'>"
+                      ~ "<span style='font-size: 18px; font-weight: 600;'>👋 " ~ ui.get('welcome', 'err-welcome') ~ ", " ~ name ~ "!</span>"
+                      ~ rank_pill
                       ~ "</div>"
-                      ~ "<div style='display: flex; flex-wrap: wrap; gap: 10px 18px;'>"
-                      ~ "<span style='display: inline-flex; align-items: center; white-space: nowrap;'><ha-icon icon='mdi:calendar-today' style='width: 14px; height: 14px; margin-right: 5px; transform: translateY(-1px);'></ha-icon>" ~ ui.get('todays_completed', 'err-todays_completed') ~ ": <b style='margin-left: 4px; color: var(--primary-text-color);'>" ~ todays_completed ~ "</b></span>"
-                      ~ "<span style='display: inline-flex; align-items: center; white-space: nowrap;'><ha-icon icon='mdi:calendar-week' style='width: 14px; height: 14px; margin-right: 5px; transform: translateY(-1px);'></ha-icon>" ~ ui.get('weekly_completed', 'err-weekly_completed') ~ ": <b style='margin-left: 4px; color: var(--primary-text-color);'>" ~ weekly_completed ~ "</b></span>"
-                      ~ "</div>"
+                      ~ "<div style='font-size: 14px; display: inline-flex; align-items: center; gap: 8px; color: " ~ status_color ~ "; font-weight: 600; line-height: 1.2; flex-wrap: wrap;'>"
+                      ~ "<ha-icon icon='" ~ status_icon ~ "' style='width: 16px; height: 16px; color: " ~ status_color ~ "; transform: translateY(-2px);'></ha-icon>"
+                      ~ "<span>" ~ status_text ~ "</span>"
                       ~ "</div></div>"
                     -%}
 
                     {%- set right_col = "" -%}
                     {%- if gamification_enabled -%}
                       {%- set right_col =
-                        "<div style='text-align: right; flex-shrink: 0; display: flex; flex-direction: column; align-items: flex-end; margin-left: 14px;'>"
-                        ~ "<div style='display: inline-flex; align-items: center; color: var(--primary-color); font-size: 22px; font-weight: 800; line-height: 1;'><ha-icon icon='" ~ p_icon ~ "' style='width: 22px; height: 24px; margin-right: 6px; transform: translateY(-2px);'></ha-icon>" ~ points ~ "</div>"
+                        "<div style='text-align: right; flex-shrink: 0; display: flex; flex-direction: column; align-items: flex-end; justify-content: flex-end; margin-left: 14px;'>"
+                        ~ "<div style='display: inline-flex; align-items: center; color: var(--primary-color); font-size: 22px; font-weight: 800; line-height: 1; white-space: nowrap;'><ha-icon icon='" ~ p_icon ~ "' style='width: 22px; height: 24px; margin-right: 6px; transform: translateY(-2px);'></ha-icon>" ~ points ~ "</div>"
                         ~ "<div style='font-size: 10px; text-transform: uppercase; font-weight: 700; opacity: 0.7; margin-top: 4px; letter-spacing: 0.5px;'>" ~ points_label ~ "</div>"
-                        ~ badge_pill
                         ~ "</div>"
                       -%}
                     {%- endif -%}
 
-                    {%- set content_html = "<div style='display: flex; justify-content: space-between; align-items: center; width: 100%; gap: 10px;'>" ~ left_col ~ right_col ~ "</div>" if gamification_enabled else left_col -%}
+                    {%- set content_html = "<div style='display: flex; justify-content: space-between; align-items: flex-end; width: 100%; gap: 10px;'>" ~ left_col ~ right_col ~ "</div>" if gamification_enabled else left_col -%}
 
                     {#-- 5. Render --#}
                     {{
@@ -359,7 +367,7 @@ views:
                     {%- set highest_badge = ((states(highest_badge_entity) if highest_badge_entity else 'None') or 'None') -%}
                     {%- set highest_badge_icon = (state_attr(highest_badge_entity, 'icon') if highest_badge_entity else None) or 'mdi:medal-outline' -%}
                     {%- set highest_badge_display = ui.get('none', 'err-none') if highest_badge in ['None', 'unknown', 'Unknown', 'unavailable'] else highest_badge -%}
-                    {%- set points_multiplier_text = (points_multiplier | round(0) | int) | string -%}
+                    {%- set points_multiplier_text = ('%.2f' | format(points_multiplier)) | regex_replace('\.?0+$', '') -%}
                     {%- set safe_name = (name | string | replace('&', '&amp;') | replace('<', '&lt;') | replace('>', '&gt;')) -%}
                     {%- set rank_status = (highest_badge_attrs.get('badge_status', 'active') | string | lower) if highest_badge_attrs is mapping else 'active' -%}
                     {%- set rank_points_to_next = highest_badge_attrs.get('points_to_next_badge', 0) | int(default=0) if highest_badge_attrs is mapping else 0 -%}
@@ -413,11 +421,12 @@ views:
                         {%- if next_rank_progress < 0 -%}{%- set next_rank_progress = 0 -%}{%- endif -%}
                         {%- set next_rank_pct = (next_rank_progress / next_rank_threshold * 100) | round(0) | int -%}
                         {%- if next_rank_pct > 100 -%}{%- set next_rank_pct = 100 -%}{%- endif -%}
+                        {%- set next_rank_color = 'var(--success-color)' if next_rank_pct >= 100 else 'var(--primary-color)' -%}
                         {%- set next_rank_name_raw = ((next_rank_attrs.get('badge_name') or next_rank_attrs.get('friendly_name') or ui.get('ranks', 'err-ranks')) | string | trim) -%}
                         {%- set next_rank_name = next_rank_name_raw[8:] if next_rank_name_raw[:8] == 'Badge - ' else next_rank_name_raw -%}
                         {%- set next_rank_name_safe = next_rank_name | replace('&', '&amp;') | replace('<', '&lt;') | replace('>', '&gt;') -%}
                         {%- set next_rank_icon = (next_rank_attrs.get('icon') or 'mdi:medal-outline') | string -%}
-                        {%- set rank_rows_html = rank_rows_html ~ "<div style='" ~ compact_row_base ~ "'><span style='" ~ compact_row_icon_wrap ~ "'><ha-icon icon='" ~ next_rank_icon ~ "' style='width:16px;height:16px;color:var(--primary-color);transform:translateY(-4px);'></ha-icon></span><div style='min-width:0;padding-right:2px;font-size:11px;font-weight:600;color:var(--primary-text-color);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;'>" ~ next_rank_name_safe ~ "</div><div style='display:grid;grid-template-columns:minmax(84px,1fr) auto;align-items:center;column-gap:8px;min-width:0;'><div style='height:6px;background:var(--divider-color);border-radius:999px;overflow:hidden;'><div style='width:" ~ next_rank_pct|string ~ "%;height:100%;background:var(--primary-color);border-radius:999px;'></div></div><div style='font-size:10px;font-weight:700;color:var(--secondary-text-color);white-space:nowrap;'>" ~ (next_rank_progress | round(0) | int | string) ~ "/" ~ (next_rank_threshold | round(0) | int | string) ~ "</div></div></div>" -%}
+                        {%- set rank_rows_html = rank_rows_html ~ "<div style='" ~ compact_row_base ~ "'><span style='" ~ compact_row_icon_wrap ~ "'><ha-icon icon='" ~ next_rank_icon ~ "' style='width:16px;height:16px;color:" ~ next_rank_color ~ ";transform:translateY(-4px);'></ha-icon></span><div style='min-width:0;padding-right:2px;font-size:11px;font-weight:600;color:var(--primary-text-color);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;'>" ~ next_rank_name_safe ~ "</div><div style='display:grid;grid-template-columns:minmax(84px,1fr) auto;align-items:center;column-gap:8px;min-width:0;'><div style='height:6px;background:var(--divider-color);border-radius:999px;overflow:hidden;'><div style='width:" ~ next_rank_pct|string ~ "%;height:100%;background:" ~ next_rank_color ~ ";border-radius:999px;'></div></div><div style='font-size:10px;font-weight:700;color:" ~ next_rank_color ~ ";white-space:nowrap;'>" ~ (next_rank_progress | round(0) | int | string) ~ "/" ~ (next_rank_threshold | round(0) | int | string) ~ "</div></div></div>" -%}
                       {%- endif -%}
                     {%- endif -%}
 
@@ -464,8 +473,9 @@ views:
                             {%- set quest_name = quest_name_raw[8:] if quest_name_raw[:8] == 'Badge - ' else quest_name_raw -%}
                             {%- set quest_name_safe = quest_name | replace('&', '&amp;') | replace('<', '&lt;') | replace('>', '&gt;') -%}
                             {%- set quest_icon = (quest_attrs.get('icon') or 'mdi:calendar-refresh-outline') | string -%}
+                            {%- set quest_color = 'var(--success-color)' if quest_pct >= 100 else 'var(--primary-color)' -%}
                             {%- set quest_ns.count = quest_ns.count + 1 -%}
-                            {%- set quest_ns.rows_html = quest_ns.rows_html ~ "<div style='" ~ compact_row_base ~ "'><span style='" ~ compact_row_icon_wrap ~ "'><ha-icon icon='" ~ quest_icon ~ "' style='width:16px;height:16px;color:var(--primary-color);transform:translateY(-4px);'></ha-icon></span><div style='min-width:0;padding-right:2px;font-size:11px;font-weight:600;color:var(--primary-text-color);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;'>" ~ quest_name_safe ~ "</div><div style='display:grid;grid-template-columns:minmax(84px,1fr) auto;align-items:center;column-gap:8px;min-width:0;'><div style='height:6px;background:var(--divider-color);border-radius:999px;overflow:hidden;'><div style='width:" ~ quest_pct|string ~ "%;height:100%;background:var(--primary-color);border-radius:999px;'></div></div><div style='font-size:10px;font-weight:700;color:var(--secondary-text-color);white-space:nowrap;'>" ~ quest_pct|string ~ "%</div></div></div>" -%}
+                            {%- set quest_ns.rows_html = quest_ns.rows_html ~ "<div style='" ~ compact_row_base ~ "'><span style='" ~ compact_row_icon_wrap ~ "'><ha-icon icon='" ~ quest_icon ~ "' style='width:16px;height:16px;color:" ~ quest_color ~ ";transform:translateY(-4px);'></ha-icon></span><div style='min-width:0;padding-right:2px;font-size:11px;font-weight:600;color:var(--primary-text-color);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;'>" ~ quest_name_safe ~ "</div><div style='display:grid;grid-template-columns:minmax(84px,1fr) auto;align-items:center;column-gap:8px;min-width:0;'><div style='height:6px;background:var(--divider-color);border-radius:999px;overflow:hidden;'><div style='width:" ~ quest_pct|string ~ "%;height:100%;background:" ~ quest_color ~ ";border-radius:999px;'></div></div><div style='font-size:10px;font-weight:700;color:" ~ quest_color ~ ";white-space:nowrap;'>" ~ quest_pct|string ~ "%</div></div></div>" -%}
                           {%- endif -%}
                         {%- endif -%}
                       {%- endif -%}
@@ -491,8 +501,9 @@ views:
                             {%- set achievement_name = ((achievement_attrs.get('achievement_name') or achievement.get('name') or state_attr(achievement_eid, 'friendly_name') or ui.get('achievements', 'err-achievements')) | string | trim) -%}
                             {%- set achievement_name_safe = achievement_name | replace('&', '&amp;') | replace('<', '&lt;') | replace('>', '&gt;') -%}
                             {%- set achievement_icon = (achievement_attrs.get('icon') or 'mdi:trophy') | string -%}
+                            {%- set achievement_color = 'var(--success-color)' if achievement_pct >= 100 else 'var(--primary-color)' -%}
                             {%- set achievement_ns.count = achievement_ns.count + 1 -%}
-                            {%- set achievement_ns.rows_html = achievement_ns.rows_html ~ "<div style='" ~ compact_row_base ~ "'><span style='" ~ compact_row_icon_wrap ~ "'><ha-icon icon='" ~ achievement_icon ~ "' style='width:16px;height:16px;color:var(--primary-color);transform:translateY(-4px);'></ha-icon></span><div style='min-width:0;padding-right:2px;font-size:11px;font-weight:600;color:var(--primary-text-color);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;'>" ~ achievement_name_safe ~ "</div><div style='display:grid;grid-template-columns:minmax(84px,1fr) auto;align-items:center;column-gap:8px;min-width:0;'><div style='height:6px;background:var(--divider-color);border-radius:999px;overflow:hidden;'><div style='width:" ~ achievement_pct|string ~ "%;height:100%;background:var(--primary-color);border-radius:999px;'></div></div><div style='font-size:10px;font-weight:700;color:var(--secondary-text-color);white-space:nowrap;'>" ~ (achievement_progress_clamped | round(0) | int | string) ~ "/" ~ achievement_target|string ~ "</div></div></div>" -%}
+                            {%- set achievement_ns.rows_html = achievement_ns.rows_html ~ "<div style='" ~ compact_row_base ~ "'><span style='" ~ compact_row_icon_wrap ~ "'><ha-icon icon='" ~ achievement_icon ~ "' style='width:16px;height:16px;color:" ~ achievement_color ~ ";transform:translateY(-4px);'></ha-icon></span><div style='min-width:0;padding-right:2px;font-size:11px;font-weight:600;color:var(--primary-text-color);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;'>" ~ achievement_name_safe ~ "</div><div style='display:grid;grid-template-columns:minmax(84px,1fr) auto;align-items:center;column-gap:8px;min-width:0;'><div style='height:6px;background:var(--divider-color);border-radius:999px;overflow:hidden;'><div style='width:" ~ achievement_pct|string ~ "%;height:100%;background:" ~ achievement_color ~ ";border-radius:999px;'></div></div><div style='font-size:10px;font-weight:700;color:" ~ achievement_color ~ ";white-space:nowrap;'>" ~ (achievement_progress_clamped | round(0) | int | string) ~ "/" ~ achievement_target|string ~ "</div></div></div>" -%}
                           {%- endif -%}
                         {%- endif -%}
                       {%- endif -%}

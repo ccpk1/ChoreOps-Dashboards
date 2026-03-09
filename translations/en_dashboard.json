@@ -69,6 +69,7 @@
   "current_turn": "Current turn",
   "not_my_turn": "Not My Turn",
   "already_approved": "Already Approved",
+  "all_caught_up": "All Caught Up!",
   "pending_claim": "Pending Claim",
   "steal_available": "Steal",
   "missed_locked": "Missed (Locked)",

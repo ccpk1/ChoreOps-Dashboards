@@ -91,8 +91,6 @@ views:
                     {%- set points_multiplier = (state_attr(points_sensor, 'points_multiplier') | float(default=1)) if points_sensor else 1 -%}
                     {%- set highest_badge = ((states(highest_badge_entity) if highest_badge_entity else 'None') or 'None') -%}
                     {%- set highest_badge_icon = (state_attr(highest_badge_entity, 'icon') if highest_badge_entity else None) or 'mdi:medal-outline' -%}
-                    {%- set weekly_completed = (state_attr(total_sensor, 'chore_stat_approved_week') | int(default=0)) if total_sensor else 0 -%}
-                    {%- set todays_completed = (state_attr(total_sensor, 'chore_stat_approved_today') | int(default=0)) if total_sensor else 0 -%}
                     {%- set overdue_now = (state_attr(total_sensor, 'chore_stat_current_overdue') | int(default=0)) if total_sensor else 0 -%}
                     {%- set due_today_open = (state_attr(total_sensor, 'chore_stat_current_due_today') | int(default=0)) if total_sensor else 0 -%}
 
@@ -100,39 +98,49 @@ views:
                     {%- set p_icon = points_icon | default('mdi:star', true) -%}
                     {%- set multiplier_display = points_multiplier | int if points_multiplier == (points_multiplier | int) else points_multiplier -%}
 
-                    {%- set badge_pill = '' -%}
+                    {%- set rank_pill = '' -%}
                     {%- if highest_badge not in ['None', 'unknown', 'Unknown', 'unavailable'] -%}
                       {%- set mult_text = " <span style='color: var(--warning-color);'>(x" ~ multiplier_display|string ~ ")</span>" if points_multiplier > 1 else '' -%}
-                      {%- set badge_pill = "<div style='margin-top: 7px; font-size: 12px; background: var(--secondary-background-color); padding: 4px 12px; border-radius: 14px; border: 1px solid var(--divider-color); display: inline-flex; align-items: center; justify-content: center;'><ha-icon icon='" ~ highest_badge_icon ~ "' style='width: 18px; height: 14px; margin-right: 5px; color: var(--warning-color);'></ha-icon><span style='font-weight: 600; color: var(--primary-text-color);'>" ~ highest_badge ~ mult_text ~ "</span></div>" -%}
+                      {%- set rank_pill = "<span style='font-size: 12px; background: var(--secondary-background-color); padding: 4px 12px; border-radius: 999px; border: 1px solid var(--divider-color); display: inline-flex; align-items: center; justify-content: center; white-space: nowrap;'><ha-icon icon='" ~ highest_badge_icon ~ "' style='width: 18px; height: 14px; margin-right: 5px; color: var(--warning-color);'></ha-icon><span style='font-weight: 600; color: var(--primary-text-color);'>" ~ highest_badge ~ mult_text ~ "</span></span>" -%}
+                    {%- endif -%}
+
+                    {%- if overdue_now > 0 -%}
+                      {%- set status_icon = 'mdi:alert-octagon' -%}
+                      {%- set status_color = 'var(--error-color)' -%}
+                      {%- set status_text = ui.get('overdue', 'err-overdue') ~ ': ' ~ overdue_now|string -%}
+                    {%- elif due_today_open > 0 -%}
+                      {%- set status_icon = 'mdi:calendar-clock' -%}
+                      {%- set status_color = 'var(--warning-color)' -%}
+                      {%- set status_text = ui.get('due_today', 'err-due_today') ~ ': ' ~ due_today_open|string -%}
+                    {%- else -%}
+                      {%- set status_icon = 'mdi:check-circle' -%}
+                      {%- set status_color = 'var(--success-color)' -%}
+                      {%- set status_text = ui.get('all_caught_up', 'All Caught Up!') -%}
                     {%- endif -%}
 
                     {%- set left_col =
                       "<div style='text-align: left; flex-grow: 1; min-width: 0;'>"
-                      ~ "<div style='font-size: 18px; font-weight: 600; margin-bottom: 8px; line-height: 1.2;'>👋 " ~ ui.get('welcome', 'err-welcome') ~ ", " ~ name ~ "!</div>"
-                      ~ "<div style='font-size: 12px; color: var(--secondary-text-color); display: flex; flex-direction: column; gap: 5px; line-height: 1.15;'>"
-                      ~ "<div style='display: flex; flex-wrap: wrap; gap: 10px 18px;'>"
-                      ~ "<span style='display: inline-flex; align-items: center; white-space: nowrap; color: " ~ ('var(--error-color)' if overdue_now > 0 else 'var(--secondary-text-color)') ~ ";'><ha-icon icon='mdi:alert-octagon-outline' style='width: 14px; height: 14px; margin-right: 5px; transform: translateY(-1px);'></ha-icon>" ~ ui.get('overdue', 'err-overdue') ~ ": <b style='margin-left: 4px; color: " ~ ('var(--error-color)' if overdue_now > 0 else 'var(--primary-text-color)') ~ ";'>" ~ overdue_now ~ "</b></span>"
-                      ~ "<span style='display: inline-flex; align-items: center; white-space: nowrap; color: " ~ ('var(--warning-color)' if due_today_open > 0 else 'var(--secondary-text-color)') ~ ";'><ha-icon icon='mdi:calendar-clock' style='width: 14px; height: 14px; margin-right: 5px; transform: translateY(-1px);'></ha-icon>" ~ ui.get('due_today', 'err-due_today') ~ ": <b style='margin-left: 4px; color: " ~ ('var(--warning-color)' if due_today_open > 0 else 'var(--primary-text-color)') ~ ";'>" ~ due_today_open ~ "</b></span>"
+                      ~ "<div style='display: flex; align-items: center; flex-wrap: wrap; gap: 8px 10px; margin-bottom: 10px; line-height: 1.2;'>"
+                      ~ "<span style='font-size: 18px; font-weight: 600;'>👋 " ~ ui.get('welcome', 'err-welcome') ~ ", " ~ name ~ "!</span>"
+                      ~ rank_pill
                       ~ "</div>"
-                      ~ "<div style='display: flex; flex-wrap: wrap; gap: 10px 18px;'>"
-                      ~ "<span style='display: inline-flex; align-items: center; white-space: nowrap;'><ha-icon icon='mdi:calendar-today' style='width: 14px; height: 14px; margin-right: 5px; transform: translateY(-1px);'></ha-icon>" ~ ui.get('todays_completed', 'err-todays_completed') ~ ": <b style='margin-left: 4px; color: var(--primary-text-color);'>" ~ todays_completed ~ "</b></span>"
-                      ~ "<span style='display: inline-flex; align-items: center; white-space: nowrap;'><ha-icon icon='mdi:calendar-week' style='width: 14px; height: 14px; margin-right: 5px; transform: translateY(-1px);'></ha-icon>" ~ ui.get('weekly_completed', 'err-weekly_completed') ~ ": <b style='margin-left: 4px; color: var(--primary-text-color);'>" ~ weekly_completed ~ "</b></span>"
-                      ~ "</div>"
+                      ~ "<div style='font-size: 14px; display: inline-flex; align-items: center; gap: 8px; color: " ~ status_color ~ "; font-weight: 600; line-height: 1.2; flex-wrap: wrap;'>"
+                      ~ "<ha-icon icon='" ~ status_icon ~ "' style='width: 16px; height: 16px; color: " ~ status_color ~ "; transform: translateY(-2px);'></ha-icon>"
+                      ~ "<span>" ~ status_text ~ "</span>"
                       ~ "</div></div>"
                     -%}
 
                     {%- set right_col = "" -%}
                     {%- if gamification_enabled -%}
                       {%- set right_col =
-                        "<div style='text-align: right; flex-shrink: 0; display: flex; flex-direction: column; align-items: flex-end; margin-left: 14px;'>"
-                        ~ "<div style='display: inline-flex; align-items: center; color: var(--primary-color); font-size: 22px; font-weight: 800; line-height: 1;'><ha-icon icon='" ~ p_icon ~ "' style='width: 22px; height: 24px; margin-right: 6px; transform: translateY(-2px);'></ha-icon>" ~ points ~ "</div>"
+                        "<div style='text-align: right; flex-shrink: 0; display: flex; flex-direction: column; align-items: flex-end; justify-content: flex-end; margin-left: 14px;'>"
+                        ~ "<div style='display: inline-flex; align-items: center; color: var(--primary-color); font-size: 22px; font-weight: 800; line-height: 1; white-space: nowrap;'><ha-icon icon='" ~ p_icon ~ "' style='width: 22px; height: 24px; margin-right: 6px; transform: translateY(-2px);'></ha-icon>" ~ points ~ "</div>"
                         ~ "<div style='font-size: 10px; text-transform: uppercase; font-weight: 700; opacity: 0.7; margin-top: 4px; letter-spacing: 0.5px;'>" ~ points_label ~ "</div>"
-                        ~ badge_pill
                         ~ "</div>"
                       -%}
                     {%- endif -%}
 
-                    {%- set content_html = "<div style='display: flex; justify-content: space-between; align-items: center; width: 100%; gap: 10px;'>" ~ left_col ~ right_col ~ "</div>" if gamification_enabled else left_col -%}
+                    {%- set content_html = "<div style='display: flex; justify-content: space-between; align-items: flex-end; width: 100%; gap: 10px;'>" ~ left_col ~ right_col ~ "</div>" if gamification_enabled else left_col -%}
 
                     {#-- 5. Render --#}
                     {{
