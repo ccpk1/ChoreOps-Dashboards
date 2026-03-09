@@ -8,20 +8,23 @@
 - Modular shared-template architecture: standard and kids chore-row logic are sourced from `templates/shared/button_card_template_chore_row_v1.yaml` and `templates/shared/button_card_template_chore_row_kids_v1.yaml`, then composed into published runtime templates.
 - Portability note: copy from composed runtime templates (vendored output), not directly from shared fragment source files.
 - Friendly for drag-and-drop workflows: keep defaults for a simple setup, then tune behavior with `pref_*` values.
+- This document covers the supported user-tunable `pref_*` surface for the template. Internal shared-fragment contract keys are intentionally left out.
 - Supports practical organization controls (time buckets, labels, sorting, and state filtering).
 
 ## Header tint preference
 
 - `pref_primary_tint_mix_pct` (default: `14`)
   - Controls the percent of `var(--primary-color)` mixed into the background fill when header background fill is enabled.
-  - Applies only to the welcome card and the main headers for Chores, Rewards, Cumulative, and Periodic.
+  - Applies to the welcome card and the section headers for Showcase, Rewards, Cumulative, Periodic, and Achievements.
+  - The Chores card uses the same preference name, but its collapsed and expanded states intentionally override some header presentation details.
   - Does not affect reward rows, chore rows, group chips, or other card surfaces.
   - Allowed: integer from `0` to `100`.
 
 - `pref_show_header_background` (default: `true`)
   - Controls whether the welcome card and the main section headers render a background fill.
   - When `false`, those surfaces use a transparent background.
-  - Applies only to the welcome card and the main headers for Chores, Rewards, Cumulative, and Periodic.
+  - Applies to the welcome card and the section headers for Showcase, Rewards, Cumulative, Periodic, and Achievements.
+  - The Chores card uses the same preference name, but its collapsed and expanded states intentionally override some header presentation details.
   - Does not affect reward rows, chore rows, group chips, or other card surfaces.
   - Allowed: `true`, `false`.
 
@@ -29,7 +32,8 @@
   - Controls whether the thin outer border line is shown on the welcome card and the main section headers.
   - When `false`, only the thin line is removed.
   - Left and bottom accent borders on section headers remain visible.
-  - Applies only to the welcome card and the main headers for Chores, Rewards, Cumulative, and Periodic.
+  - Applies to the welcome card and the section headers for Showcase, Rewards, Cumulative, Periodic, and Achievements.
+  - The Chores card uses the same preference name, but its collapsed and expanded states intentionally override some header presentation details.
   - Allowed: `true`, `false`.
 
 Recommended ranges:
@@ -53,7 +57,7 @@ Recommended ranges:
   - Grid columns for Chores settings buttons on narrow screens.
   - Allowed: positive integer.
 
-- `pref_settings_column_count_wide` (default: `10`)
+- `pref_settings_column_count_wide` (default: `3`)
   - Grid columns for Chores settings buttons on wide screens.
   - Allowed: positive integer.
 
@@ -248,6 +252,26 @@ Recommended ranges:
 
 ## Card: Showcase
 
+- `pref_hide_penalties` (default: `false`)
+  - Hides the penalties card and allows the bonus card to span the full adjustment row.
+  - Allowed: `true`, `false`.
+
+- `pref_hide_overviews` (default: `false`)
+  - Hides the rank, quest, achievement, bonus, and penalty overview sections while keeping the top showcase summary and earned badges row visible.
+  - Allowed: `true`, `false`.
+
+- `pref_primary_tint_mix_pct` (default: `14`)
+  - Sets the tint strength used by the Showcase section header.
+  - Allowed: integer from `0` to `100`.
+
+- `pref_show_header_background` (default: `true`)
+  - Controls whether the Showcase section header renders a background fill.
+  - Allowed: `true`, `false`.
+
+- `pref_show_header_thin_border` (default: `true`)
+  - Controls whether the thin outer border line is shown on the Showcase section header.
+  - Allowed: `true`, `false`.
+
 - Showcase gear panel
   - The showcase card has a gear button in the top-right corner.
   - The gear toggles a small configuration panel that stores per-user choices in `ui_control` under `gamification/showcase`.
@@ -333,6 +357,37 @@ Recommended ranges:
 - Periodic header collapse state
   - The Periodic section header supports a persisted per-user collapse toggle.
   - The template uses `ui_control_key_root = gamification/periodic` and stores the header state at `header_collapse` under that root.
+  - Default behavior comes from `pref_default_header_collapsed` when no stored override exists.
+  - Expanding again removes the stored override so the card falls back to the template default state.
+
+## Card: Achievements
+
+- `pref_primary_tint_mix_pct` (default: `14`)
+  - Sets the tint strength used by the main Achievements section header when that header is collapsed.
+  - Allowed: integer from `0` to `100`.
+
+- `pref_show_header_background` (default: `true`)
+  - Currently kept in place for compatibility, but the Achievements header now overrides this behavior.
+  - Collapsed state always shows the tinted header background.
+  - Expanded state always suppresses the header background.
+  - Allowed: `true`, `false`.
+
+- `pref_show_header_thin_border` (default: `true`)
+  - Currently kept in place for compatibility, but the Achievements header now overrides this behavior.
+  - Collapsed state always shows the thin full outer border.
+  - Expanded state suppresses only that thin outer border.
+  - The left and bottom accent borders remain visible in both states.
+  - Allowed: `true`, `false`.
+
+- `pref_default_header_collapsed` (default: `false`)
+  - Sets the default Achievements header state when no persisted UI override exists.
+  - `false` means expanded by default.
+  - `true` means collapsed by default.
+  - Allowed: `true`, `false`.
+
+- Achievements header collapse state
+  - The Achievements section header supports a persisted per-user collapse toggle.
+  - The template uses `ui_control_key_root = gamification/achievements` and stores the header state at `header_collapse` under that root.
   - Default behavior comes from `pref_default_header_collapsed` when no stored override exists.
   - Expanding again removes the stored override so the card falls back to the template default state.
 
