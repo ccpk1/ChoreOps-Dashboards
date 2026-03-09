@@ -158,7 +158,7 @@
     {
       "template_id": "admin-shared-v1",
       "display_name": "Admin (Shared)",
-      "description": "Admin dashboard with shared selector workflow",
+      "description": "Modern admin dashboard with shared approval hub workflow",
       "audience": "approver",
       "category": "admin",
       "lifecycle_state": "active",
@@ -200,7 +200,7 @@
     {
       "template_id": "admin-peruser-v1",
       "display_name": "Admin (Per User)",
-      "description": "Admin dashboard with per-user tab workflow",
+      "description": "Modern admin dashboard with fixed per-user approval workspace",
       "audience": "approver",
       "category": "admin",
       "lifecycle_state": "active",
@@ -237,6 +237,90 @@
       },
       "preferences": {
         "doc_asset_path": "preferences/admin-peruser-v1.md"
+      }
+    },
+    {
+      "template_id": "admin-shared-kidschores-classic",
+      "display_name": "Admin (Shared) KidsChores Classic",
+      "description": "Classic admin dashboard with shared selector workflow",
+      "audience": "approver",
+      "category": "admin",
+      "lifecycle_state": "active",
+      "min_integration_version": "0.5.1",
+      "maintainer": "ccpk1",
+      "source": {
+        "type": "vendored",
+        "path": "templates/admin-shared-kidschores-classic.yaml"
+      },
+      "dependencies": {
+        "required": [
+          {
+            "id": "ha-card:auto-entities",
+            "name": "Auto-Entities",
+            "url": "https://github.com/thomasloven/lovelace-auto-entities"
+          },
+          {
+            "id": "ha-card:mini-graph-card",
+            "name": "Mini Graph Card",
+            "url": "https://github.com/kalkih/mini-graph-card"
+          },
+          {
+            "id": "ha-card:mushroom-select-card",
+            "name": "Mushroom Cards",
+            "url": "https://github.com/piitaya/lovelace-mushroom"
+          },
+          {
+            "id": "ha-card:mushroom-template-card",
+            "name": "Mushroom Cards",
+            "url": "https://github.com/piitaya/lovelace-mushroom"
+          }
+        ],
+        "recommended": []
+      },
+      "preferences": {
+        "doc_asset_path": "preferences/admin-shared-kidschores-classic.md"
+      }
+    },
+    {
+      "template_id": "admin-peruser-kidschores-classic",
+      "display_name": "Admin (Per User) KidsChores Classic",
+      "description": "Classic admin dashboard with per-user tab workflow",
+      "audience": "approver",
+      "category": "admin",
+      "lifecycle_state": "active",
+      "min_integration_version": "0.5.0-beta.5",
+      "maintainer": "ccpk1",
+      "source": {
+        "type": "vendored",
+        "path": "templates/admin-peruser-kidschores-classic.yaml"
+      },
+      "dependencies": {
+        "required": [
+          {
+            "id": "ha-card:auto-entities",
+            "name": "Auto-Entities",
+            "url": "https://github.com/thomasloven/lovelace-auto-entities"
+          },
+          {
+            "id": "ha-card:mini-graph-card",
+            "name": "Mini Graph Card",
+            "url": "https://github.com/kalkih/mini-graph-card"
+          },
+          {
+            "id": "ha-card:mushroom-select-card",
+            "name": "Mushroom Cards",
+            "url": "https://github.com/piitaya/lovelace-mushroom"
+          },
+          {
+            "id": "ha-card:mushroom-template-card",
+            "name": "Mushroom Cards",
+            "url": "https://github.com/piitaya/lovelace-mushroom"
+          }
+        ],
+        "recommended": []
+      },
+      "preferences": {
+        "doc_asset_path": "preferences/admin-peruser-kidschores-classic.md"
       }
     }
   ]

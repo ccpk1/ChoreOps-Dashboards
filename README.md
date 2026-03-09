@@ -41,7 +41,7 @@ Issue routing:
 
 ## Current template IDs
 
-The current manifest uses versioned, immutable template IDs:
+The current manifest uses immutable template IDs:
 
 - `user-chores-essential-v1` → `templates/user-chores-essential-v1.yaml`
 - `user-chores-standard-v1` → `templates/user-chores-standard-v1.yaml`
@@ -49,6 +49,8 @@ The current manifest uses versioned, immutable template IDs:
 - `user-kidschores-classic-v1` → `templates/user-kidschores-classic-v1.yaml`
 - `admin-shared-v1` → `templates/admin-shared-v1.yaml`
 - `admin-peruser-v1` → `templates/admin-peruser-v1.yaml`
+- `admin-shared-kidschores-classic` → `templates/admin-shared-kidschores-classic.yaml`
+- `admin-peruser-kidschores-classic` → `templates/admin-peruser-kidschores-classic.yaml`
 
 Matching preference docs:
 
@@ -58,6 +60,8 @@ Matching preference docs:
 - `preferences/user-kidschores-classic-v1.md`
 - `preferences/admin-shared-v1.md`
 - `preferences/admin-peruser-v1.md`
+- `preferences/admin-shared-kidschores-classic.md`
+- `preferences/admin-peruser-kidschores-classic.md`
 
 Template IDs are immutable once published; new behavior variants should ship as new IDs.
 

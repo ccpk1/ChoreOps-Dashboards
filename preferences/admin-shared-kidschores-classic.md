@@ -1,6 +1,4 @@
-# admin-peruser-v1 preferences
-
-This v1 template starts with a redesigned approval header and fixed per-user review context while preserving the existing downstream admin cards.
+# admin-shared-kidschores-classic preferences
 
 This template has configurable `pref_*` values in approval action layout.
 

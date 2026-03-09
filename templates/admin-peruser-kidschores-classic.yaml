@@ -42,126 +42,23 @@ views:
 
               << template_snippets.admin_setup_peruser >>
 
-              {%- set dashboard_helper = admin_selector_eid | default('', true) -%}
-              {%- set ui = {} -%}
-              {%- set chore_count = 0 -%}
-              {%- set reward_count = 0 -%}
-              {%- if dashboard_helper not in ['', None, 'None'] -%}
-                {%- set translation_sensor = (state_attr(dashboard_helper, 'dashboard_helpers') or {}).get('translation_sensor_eid') -%}
-                {%- set ui = state_attr(translation_sensor, 'ui_translations') if translation_sensor else {} -%}
-                {%- set pending_approvals = state_attr(dashboard_helper, 'pending_approvals') | default({}, true) -%}
-                {%- set chore_count = pending_approvals.get('chores', []) | count -%}
-                {%- set reward_count = pending_approvals.get('rewards', []) | count -%}
-              {%- endif -%}
-              {%- set total_count = chore_count + reward_count -%}
-
               {{
                 {
-                  'type': 'custom:button-card',
-                  'entity': dashboard_helper if dashboard_helper not in ['', None, 'None'] else admin_selector_eid,
-                  'name': ui.get('approval_center', 'Approval Center'),
-                  'label': ui.get('review_chores_and_rewards_waiting_for_approval', 'Review chores and rewards waiting for approval.') ~ ' ' ~ (
-                    ui.get('no_pending_approvals', 'No Pending Approvals')
-                    if total_count == 0
-                    else (
-                      chore_count ~ ' ' ~ ui.get('chores', 'Chores') ~
-                      ' | ' ~ reward_count ~ ' ' ~ ui.get('rewards', 'Rewards')
-                    )
-                  ),
-                  'show_name': true,
-                  'show_label': true,
-                  'show_state': false,
-                  'show_icon': true,
-                  'icon': 'mdi:clipboard-check-multiple-outline',
-                  'icon_color': 'green' if total_count == 0 else 'orange',
-                  'tap_action': {'action': 'none'},
-                  'hold_action': {'action': 'more-info'} if dashboard_helper not in ['', None, 'None'] else {'action': 'none'},
-                  'styles': {
-                    'card': [
-                      {'padding': '18px 20px'},
-                      {'border-radius': '18px'},
-                      {'box-shadow': 'none'},
-                      {'border': '1px solid color-mix(in srgb, var(--primary-color) 14%, var(--divider-color))'},
-                      {'background': 'color-mix(in srgb, var(--primary-color) 8%, var(--card-background-color))'}
-                    ],
-                    'grid': [
-                      {'grid-template-areas': '"i n" "i l"'},
-                      {'grid-template-columns': '40px minmax(0, 1fr)'},
-                      {'grid-template-rows': 'min-content min-content'},
-                      {'column-gap': '14px'}
-                    ],
-                    'name': [
-                      {'justify-self': 'start'},
-                      {'font-size': '18px'},
-                      {'font-weight': '800'},
-                      {'line-height': '1.2'}
-                    ],
-                    'label': [
-                      {'justify-self': 'start'},
-                      {'font-size': '13px'},
-                      {'color': 'var(--secondary-text-color)'},
-                      {'white-space': 'normal'},
-                      {'line-height': '1.4'}
-                    ],
-                    'icon': [
-                      {'width': '28px'},
-                      {'height': '28px'},
-                      {'align-self': 'start'}
-                    ]
-                  }
+                  'type': 'markdown',
+                  'content': '# ChoreOps System Administration\n\n**Managing per-user admin view for:** ' ~ name
                 }
               }},
 
               {%- if admin_selector_eid -%}
                 {{
                   {
-                    'type': 'custom:button-card',
+                    'type': 'custom:mushroom-template-card',
                     'entity': admin_selector_eid,
-                    'name': name,
-                    'label': (
-                      ui.get('no_pending_approvals', 'No Pending Approvals')
-                      if total_count == 0
-                      else (
-                        chore_count ~ ' ' ~ ui.get('chores', 'Chores') ~
-                        ' | ' ~ reward_count ~ ' ' ~ ui.get('rewards', 'Rewards')
-                      )
-                    ),
-                    'show_name': true,
-                    'show_label': true,
-                    'show_state': false,
-                    'show_icon': true,
-                    'icon': 'mdi:account-check-outline',
-                    'icon_color': 'green' if total_count == 0 else 'orange',
-                    'tap_action': {'action': 'none'},
-                    'hold_action': {'action': 'more-info'},
-                    'styles': {
-                      'card': [
-                        {'padding': '14px 16px'},
-                        {'border-radius': '14px'},
-                        {'box-shadow': 'none'},
-                        {'border': '1px solid var(--divider-color)'}
-                      ],
-                      'grid': [
-                        {'grid-template-areas': '"i n" "i l"'},
-                        {'grid-template-columns': '28px minmax(0, 1fr)'},
-                        {'grid-template-rows': 'min-content min-content'},
-                        {'column-gap': '12px'}
-                      ],
-                      'name': [
-                        {'justify-self': 'start'},
-                        {'font-size': '14px'},
-                        {'font-weight': '700'}
-                      ],
-                      'label': [
-                        {'justify-self': 'start'},
-                        {'font-size': '12px'},
-                        {'color': 'var(--secondary-text-color)'}
-                      ],
-                      'icon': [
-                        {'width': '20px'},
-                        {'height': '20px'}
-                      ]
-                    }
+                    'primary': 'Manage: ' ~ name,
+                    'secondary': admin_selector_eid,
+                    'icon': 'mdi:account-child',
+                    'icon_color': 'blue',
+                    'tap_action': {'action': 'more-info'}
                   }
                 }},
               {%- endif -%}
