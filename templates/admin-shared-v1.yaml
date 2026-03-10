@@ -650,7 +650,7 @@ views:
 
               {%- set pref_selector_ui_control_key_root = 'admin-shared/admin-target-selector' -%}
 
-              {%- set pref_selector_default_header_collapsed = false -%}
+              {%- set pref_selector_default_header_collapsed = true -%}
 
               {%- set pref_selector_primary_tint_mix_pct = 14 -%}
 
@@ -673,7 +673,7 @@ views:
                 {%- set pref_selector_ui_control_key_root_segments = ['admin-shared', 'admin-target-selector'] -%}
               {%- endif -%}
               {%- set pref_selector_ui_control_key_root = pref_selector_ui_control_key_root_segments | join('/') -%}
-              {%- set pref_selector_default_header_collapsed = (pref_selector_default_header_collapsed | default('false') | string | lower) == 'true' -%}
+              {%- set pref_selector_default_header_collapsed = (pref_selector_default_header_collapsed | default('true') | string | lower) == 'true' -%}
               {%- set pref_selector_primary_tint_mix_pct = pref_selector_primary_tint_mix_pct | int(default=14) -%}
               {%- set pref_selector_show_header_background = (pref_selector_show_header_background | default('true') | string | lower) == 'true' -%}
               {%- set pref_selector_show_header_thin_border = (pref_selector_show_header_thin_border | default('true') | string | lower) == 'true' -%}
@@ -768,8 +768,9 @@ views:
                     'data': {
                       'config_entry_id': integration_entry_id,
                       'user_id': dashboard_helper_user_id,
-                      'ui_control_action': 'remove',
-                      'key': ui_control_key_header_collapsed
+                      'ui_control_action': 'update',
+                      'key': ui_control_key_header_collapsed,
+                      'value': false
                     }
                   } if header_collapsed and integration_entry_id not in ['', none] and dashboard_helper_user_id not in ['', none] else {
                     'action': 'call-service',
@@ -777,9 +778,8 @@ views:
                     'data': {
                       'config_entry_id': integration_entry_id,
                       'user_id': dashboard_helper_user_id,
-                      'ui_control_action': 'update',
-                      'key': ui_control_key_header_collapsed,
-                      'value': true
+                      'ui_control_action': 'remove',
+                      'key': ui_control_key_header_collapsed
                     }
                   } if integration_entry_id not in ['', none] and dashboard_helper_user_id not in ['', none] else {
                     'action': 'none'
@@ -795,8 +795,8 @@ views:
                       {'padding': '14px 16px'},
                       {'border-radius': '16px'},
                       {'box-shadow': 'none'},
-                      {'border': ('1px solid color-mix(in srgb, var(--primary-color) ' ~ pref_selector_primary_tint_mix_pct|string ~ '%, var(--divider-color))') if header_collapsed and pref_selector_show_header_thin_border else 'none' if header_collapsed else '1px solid color-mix(in srgb, var(--primary-color) 18%, var(--divider-color))' if has_selected_user else '1px solid var(--divider-color)'},
-                      {'background-color': ('color-mix(in srgb, var(--primary-color) ' ~ pref_selector_primary_tint_mix_pct|string ~ '%, var(--card-background-color))') if header_collapsed and pref_selector_show_header_background else 'transparent' if header_collapsed else 'color-mix(in srgb, var(--primary-color) 8%, var(--card-background-color))' if has_selected_user else 'var(--card-background-color)'}
+                      {'border': 'none' if has_selected_user else ('1px solid color-mix(in srgb, var(--primary-color) ' ~ pref_selector_primary_tint_mix_pct|string ~ '%, var(--divider-color))') if header_collapsed and pref_selector_show_header_thin_border else 'none' if header_collapsed else ('1px solid color-mix(in srgb, var(--primary-color) ' ~ pref_selector_primary_tint_mix_pct|string ~ '%, var(--divider-color))') if pref_selector_show_header_thin_border else 'none'},
+                      {'background-color': 'transparent' if has_selected_user else ('color-mix(in srgb, var(--primary-color) ' ~ pref_selector_primary_tint_mix_pct|string ~ '%, var(--card-background-color))') if header_collapsed and pref_selector_show_header_background else 'transparent' if header_collapsed else ('color-mix(in srgb, var(--primary-color) ' ~ pref_selector_primary_tint_mix_pct|string ~ '%, var(--card-background-color))') if pref_selector_show_header_background else 'transparent'}
                     ],
                     'grid': [
                       {'grid-template-areas': '"i n target toggle" "i l target toggle"' if has_selected_user else '"i n toggle" "i l toggle"'},
@@ -851,12 +851,27 @@ views:
                   'show_icon': False,
                   'name': ui.get('clear_selection', 'err-clear_selection'),
                   'tap_action': {'action': 'none'} if not has_selected_user else {
-                    'action': 'call-service',
-                    'service': 'select.select_option',
-                    'data': {
-                      'entity_id': admin_selector_eid,
-                      'option': 'None'
-                    }
+                    'action': 'multi-actions',
+                    'actions': [
+                      {
+                        'action': 'call-service',
+                        'service': 'select.select_option',
+                        'data': {
+                          'entity_id': admin_selector_eid,
+                          'option': 'None'
+                        }
+                      },
+                      {
+                        'action': 'call-service',
+                        'service': 'choreops.manage_ui_control',
+                        'data': {
+                          'config_entry_id': integration_entry_id,
+                          'user_id': dashboard_helper_user_id,
+                          'ui_control_action': 'remove',
+                          'key': ui_control_key_header_collapsed
+                        }
+                      }
+                    ]
                   },
                   'hold_action': {'action': 'more-info'},
                   'styles': {
@@ -886,12 +901,27 @@ views:
                     'show_icon': False,
                     'name': helper_name,
                     'tap_action': {'action': 'none'} if chip_is_selected else {
-                      'action': 'call-service',
-                      'service': 'select.select_option',
-                      'data': {
-                        'entity_id': admin_selector_eid,
-                        'option': helper_name
-                      }
+                      'action': 'multi-actions',
+                      'actions': [
+                        {
+                          'action': 'call-service',
+                          'service': 'select.select_option',
+                          'data': {
+                            'entity_id': admin_selector_eid,
+                            'option': helper_name
+                          }
+                        },
+                        {
+                          'action': 'call-service',
+                          'service': 'choreops.manage_ui_control',
+                          'data': {
+                            'config_entry_id': integration_entry_id,
+                            'user_id': dashboard_helper_user_id,
+                            'ui_control_action': 'remove',
+                            'key': ui_control_key_header_collapsed
+                          }
+                        }
+                      ]
                     },
                     'hold_action': {'action': 'more-info'},
                     'styles': {
@@ -936,7 +966,7 @@ views:
                   'show_icon': True,
                   'icon': 'mdi:restore-alert',
                   'name': ui.get('reset_all', 'err-reset_all'),
-                  'label': overdue_chore_count ~ ' ' ~ ui.get('overdue_chores', 'err-overdue_chores'),
+                  'label': selected_user_name ~ ' • ' ~ overdue_chore_count ~ ' ' ~ ui.get('overdue_chores', 'err-overdue_chores'),
                   'tap_action': {
                     'action': 'call-service',
                     'service': 'choreops.reset_overdue_chores',
@@ -949,7 +979,7 @@ views:
                   'styles': {
                     'card': [
                       {'padding': '10px 14px'},
-                      {'margin-top': '10px'},
+                      {'margin-top': '0px'},
                       {'border-radius': '14px'},
                       {'box-shadow': 'none'},
                       {'border': '1px solid color-mix(in srgb, var(--warning-color) 18%, var(--divider-color))'},
@@ -1002,7 +1032,7 @@ views:
 
               {%- set pref_chore_management_ui_control_key_root = 'admin-shared/chore-management' -%}
 
-              {%- set pref_chore_management_default_header_collapsed = false -%}
+              {%- set pref_chore_management_default_header_collapsed = true -%}
 
               {%- set pref_chore_management_primary_tint_mix_pct = 14 -%}
 
@@ -1027,7 +1057,7 @@ views:
                 {%- set pref_chore_management_ui_control_key_root_segments = ['admin-shared', 'chore-management'] -%}
               {%- endif -%}
               {%- set pref_chore_management_ui_control_key_root = pref_chore_management_ui_control_key_root_segments | join('/') -%}
-              {%- set pref_chore_management_default_header_collapsed = (pref_chore_management_default_header_collapsed | default('false') | string | lower) == 'true' -%}
+              {%- set pref_chore_management_default_header_collapsed = (pref_chore_management_default_header_collapsed | default('true') | string | lower) == 'true' -%}
               {%- set pref_chore_management_primary_tint_mix_pct = pref_chore_management_primary_tint_mix_pct | int(default=14) -%}
               {%- set pref_chore_management_show_header_background = (pref_chore_management_show_header_background | default('true') | string | lower) == 'true' -%}
               {%- set pref_chore_management_show_header_thin_border = (pref_chore_management_show_header_thin_border | default('true') | string | lower) == 'true' -%}
@@ -1077,10 +1107,19 @@ views:
                 {#-- 4. Collect Data --#}
 
                 {%- set integration_entry_id = state_attr(summary_helper, 'integration_entry_id') if summary_helper not in ['', None, 'None'] else '' -%}
-                {%- set dashboard_helper_user_id = state_attr(summary_helper, 'user_id') if summary_helper not in ['', None, 'None'] else '' -%}
-                {%- set ui_control = state_attr(summary_helper, 'ui_control') | default({}, true) if summary_helper not in ['', None, 'None'] else {} -%}
                 {%- set ui_control_key_root = pref_chore_management_ui_control_key_root -%}
                 {%- set ui_control_key_header_collapsed = ui_control_key_root ~ '/header-collapse' -%}
+                {%- set selected_user_name = states(admin_selector_eid) if admin_selector_eid not in ['', None, 'None'] else '' -%}
+                {%- set has_selected_user = selected_user_name not in ['None', 'none', '', 'unknown', 'unavailable'] -%}
+                {%- set selected_helper_matches = helper_sensor_entities | selectattr('attributes.user_name', 'eq', selected_user_name) | list if has_selected_user else [] -%}
+                {%- set selected_dashboard_helper = state_attr(admin_selector_eid, 'dashboard_helper_eid') if has_selected_user and admin_selector_eid not in ['', None, 'None'] else '' -%}
+                {%- if selected_dashboard_helper in ['', None, 'None'] and selected_helper_matches | count > 0 -%}
+                  {%- set selected_dashboard_helper = selected_helper_matches[0].entity_id -%}
+                {%- endif -%}
+                {%- set has_selected_dashboard_helper = selected_dashboard_helper not in ['', None, 'None'] and states(selected_dashboard_helper) not in ['unknown', 'unavailable'] -%}
+                {%- set ui_control_source = selected_dashboard_helper if has_selected_dashboard_helper else summary_helper -%}
+                {%- set dashboard_helper_user_id = state_attr(ui_control_source, 'user_id') if ui_control_source not in ['', None, 'None'] else '' -%}
+                {%- set ui_control = state_attr(ui_control_source, 'ui_control') | default({}, true) if ui_control_source not in ['', None, 'None'] else {} -%}
                 {%- set ui_root = namespace(current=ui_control if ui_control is mapping else {}) -%}
                 {%- for segment in ui_control_key_root.split('/') -%}
                   {%- if ui_root.current is mapping -%}
@@ -1090,14 +1129,6 @@ views:
                   {%- endif -%}
                 {%- endfor -%}
                 {%- set has_header_collapsed_override = ui_root.current is mapping and 'header-collapse' in ui_root.current -%}
-                {%- set selected_user_name = states(admin_selector_eid) if admin_selector_eid not in ['', None, 'None'] else '' -%}
-                {%- set has_selected_user = selected_user_name not in ['None', 'none', '', 'unknown', 'unavailable'] -%}
-                {%- set selected_helper_matches = helper_sensor_entities | selectattr('attributes.user_name', 'eq', selected_user_name) | list if has_selected_user else [] -%}
-                {%- set selected_dashboard_helper = state_attr(admin_selector_eid, 'dashboard_helper_eid') if has_selected_user and admin_selector_eid not in ['', None, 'None'] else '' -%}
-                {%- if selected_dashboard_helper in ['', None, 'None'] and selected_helper_matches | count > 0 -%}
-                  {%- set selected_dashboard_helper = selected_helper_matches[0].entity_id -%}
-                {%- endif -%}
-                {%- set has_selected_dashboard_helper = selected_dashboard_helper not in ['', None, 'None'] and states(selected_dashboard_helper) not in ['unknown', 'unavailable'] -%}
                 {%- set selected_dashboard_helpers = state_attr(selected_dashboard_helper, 'dashboard_helpers') or {} if has_selected_dashboard_helper else {} -%}
                 {%- set selected_core_sensors = state_attr(selected_dashboard_helper, 'core_sensors') or {} if has_selected_dashboard_helper else {} -%}
                 {%- set chore_select_entity = selected_dashboard_helpers.get('chore_select_eid') if has_selected_dashboard_helper else '' -%}
@@ -1118,13 +1149,18 @@ views:
                 {%- set header_collapsed = (ui_root.current['header-collapse'] if has_header_collapsed_override else pref_chore_management_default_header_collapsed) | default(pref_chore_management_default_header_collapsed, true) -%}
                 {%- set header_collapsed = (header_collapsed | string | lower) == 'true' -%}
                 {%- set management_label = ui.get('viewing_selected_chore', 'err-viewing_selected_chore') if has_selected_chore else ui.get('choose_chore_for_admin_actions', 'err-choose_chore_for_admin_actions') if has_chore_selector else ui.get('chore_selector_unavailable', 'err-chore_selector_unavailable') if has_selected_dashboard_helper else ui.get('select_user_to_manage_chores_first', 'err-select_user_to_manage_chores_first') -%}
+                {%- set management_label_html = (
+                  "<span style='color:var(--secondary-text-color);'>" ~ management_label ~ ":</span> <span style='font-weight:700;color:var(--primary-text-color);'>" ~ (selected_user_name | e) ~ "</span>"
+                  if has_selected_user
+                  else management_label
+                ) -%}
                 {#-- 5. Build Display --#}
 
                 {%- set management_summary_card = {
                   'type': 'custom:button-card',
                   'entity': chore_select_entity if chore_select_entity not in ['', None, 'None'] else summary_helper,
                   'show_name': True,
-                  'show_label': True,
+                  'show_label': False,
                   'show_state': False,
                   'show_icon': True,
                   'icon': 'mdi:clipboard-search-outline',
@@ -1136,8 +1172,9 @@ views:
                     'data': {
                       'config_entry_id': integration_entry_id,
                       'user_id': dashboard_helper_user_id,
-                      'ui_control_action': 'remove',
-                      'key': ui_control_key_header_collapsed
+                      'ui_control_action': 'update',
+                      'key': ui_control_key_header_collapsed,
+                      'value': false
                     }
                   } if header_collapsed and integration_entry_id not in ['', none] and dashboard_helper_user_id not in ['', none] else {
                     'action': 'call-service',
@@ -1145,28 +1182,28 @@ views:
                     'data': {
                       'config_entry_id': integration_entry_id,
                       'user_id': dashboard_helper_user_id,
-                      'ui_control_action': 'update',
-                      'key': ui_control_key_header_collapsed,
-                      'value': true
+                      'ui_control_action': 'remove',
+                      'key': ui_control_key_header_collapsed
                     }
                   } if integration_entry_id not in ['', none] and dashboard_helper_user_id not in ['', none] else {
                     'action': 'none'
                   }),
                   'hold_action': {'action': 'more-info'} if chore_select_entity not in ['', None, 'None'] else {'action': 'none'},
                   'custom_fields': {
+                    'subtitle': management_label_html,
                     'target': ("<div style='display:flex;flex-direction:column;align-items:flex-end;justify-content:center;line-height:1;max-width:240px;overflow:hidden;'><span style='display:block;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:16px;font-weight:700;color:var(--primary-text-color);'>" ~ selected_chore_display ~ "</span><span style='display:block;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-top:4px;font-size:10px;text-transform:uppercase;letter-spacing:0.06em;color:var(--primary-color);'>" ~ ui.get('active', 'err-active') ~ "</span></div>") if has_selected_chore else '',
                     'toggle': "<ha-icon icon='" ~ ('mdi:chevron-down' if header_collapsed else 'mdi:chevron-up') ~ "' style='width:18px;height:18px;color: var(--primary-color);'></ha-icon>"
                   },
                   'styles': {
                     'card': [
-                      {'padding': '12px 16px'},
+                      {'padding': '8px 16px'},
                       {'border-radius': '16px'},
                       {'box-shadow': 'none'},
-                      {'border': ('1px solid color-mix(in srgb, var(--primary-color) ' ~ pref_chore_management_primary_tint_mix_pct|string ~ '%, var(--divider-color))') if header_collapsed and pref_chore_management_show_header_thin_border else 'none' if header_collapsed else '1px solid color-mix(in srgb, var(--primary-color) 18%, var(--divider-color))' if has_selected_chore else '1px solid var(--divider-color)'},
-                      {'background-color': ('color-mix(in srgb, var(--primary-color) ' ~ pref_chore_management_primary_tint_mix_pct|string ~ '%, var(--card-background-color))') if header_collapsed and pref_chore_management_show_header_background else 'transparent' if header_collapsed else 'color-mix(in srgb, var(--primary-color) 8%, var(--card-background-color))' if has_selected_chore else 'var(--card-background-color)'}
+                      {'border': ('1px solid color-mix(in srgb, var(--primary-color) ' ~ pref_chore_management_primary_tint_mix_pct|string ~ '%, var(--divider-color))') if header_collapsed and pref_chore_management_show_header_thin_border else 'none' if header_collapsed else ('1px solid color-mix(in srgb, var(--primary-color) ' ~ pref_chore_management_primary_tint_mix_pct|string ~ '%, var(--divider-color))') if has_selected_chore and pref_chore_management_show_header_thin_border else 'none' if has_selected_chore else '1px solid var(--divider-color)'},
+                      {'background-color': ('color-mix(in srgb, var(--primary-color) ' ~ pref_chore_management_primary_tint_mix_pct|string ~ '%, var(--card-background-color))') if header_collapsed and pref_chore_management_show_header_background else 'transparent' if header_collapsed else ('color-mix(in srgb, var(--primary-color) ' ~ pref_chore_management_primary_tint_mix_pct|string ~ '%, var(--card-background-color))') if has_selected_chore and pref_chore_management_show_header_background else 'transparent'}
                     ],
                     'grid': [
-                      {'grid-template-areas': '"i n target toggle" "i l target toggle"' if has_selected_chore else '"i n toggle" "i l toggle"'},
+                      {'grid-template-areas': '"i n target toggle" "i subtitle target toggle"' if has_selected_chore else '"i n toggle" "i subtitle toggle"'},
                       {'grid-template-columns': '32px minmax(150px, 1fr) minmax(0, auto) min-content' if has_selected_chore else '32px minmax(0, 1fr) min-content'},
                       {'grid-template-rows': 'min-content min-content'},
                       {'column-gap': '14px'},
@@ -1199,6 +1236,16 @@ views:
                       {'white-space': 'normal'}
                     ],
                     'custom_fields': {
+                      'subtitle': [
+                        {'justify-self': 'start'},
+                        {'min-width': '0'},
+                        {'width': '100%'},
+                        {'text-align': 'left'},
+                        {'font-size': '12px'},
+                        {'line-height': '1.35'},
+                        {'color': 'var(--secondary-text-color)'},
+                        {'white-space': 'normal'}
+                      ],
                       'target': [
                         {'justify-self': 'end'},
                         {'align-self': 'center'},
@@ -1454,27 +1501,27 @@ views:
                   {%- set turn_user_name = chore_attrs.get('turn_user_name') -%}
                   {%- set applicable_days = chore_attrs.get('applicable_days', []) | default([], true) -%}
                   {%- set day_name_map = {
-                    '0': 'Mon',
-                    '1': 'Tue',
-                    '2': 'Wed',
-                    '3': 'Thu',
-                    '4': 'Fri',
-                    '5': 'Sat',
-                    '6': 'Sun',
-                    'mon': 'Mon',
-                    'tue': 'Tue',
-                    'wed': 'Wed',
-                    'thu': 'Thu',
-                    'fri': 'Fri',
-                    'sat': 'Sat',
-                    'sun': 'Sun',
-                    'monday': 'Mon',
-                    'tuesday': 'Tue',
-                    'wednesday': 'Wed',
-                    'thursday': 'Thu',
-                    'friday': 'Fri',
-                    'saturday': 'Sat',
-                    'sunday': 'Sun'
+                    '0': ui.get('mon_short', 'Mon'),
+                    '1': ui.get('tue_short', 'Tue'),
+                    '2': ui.get('wed_short', 'Wed'),
+                    '3': ui.get('thu_short', 'Thu'),
+                    '4': ui.get('fri_short', 'Fri'),
+                    '5': ui.get('sat_short', 'Sat'),
+                    '6': ui.get('sun_short', 'Sun'),
+                    'mon': ui.get('mon_short', 'Mon'),
+                    'tue': ui.get('tue_short', 'Tue'),
+                    'wed': ui.get('wed_short', 'Wed'),
+                    'thu': ui.get('thu_short', 'Thu'),
+                    'fri': ui.get('fri_short', 'Fri'),
+                    'sat': ui.get('sat_short', 'Sat'),
+                    'sun': ui.get('sun_short', 'Sun'),
+                    'monday': ui.get('mon_short', 'Mon'),
+                    'tuesday': ui.get('tue_short', 'Tue'),
+                    'wednesday': ui.get('wed_short', 'Wed'),
+                    'thursday': ui.get('thu_short', 'Thu'),
+                    'friday': ui.get('fri_short', 'Fri'),
+                    'saturday': ui.get('sat_short', 'Sat'),
+                    'sunday': ui.get('sun_short', 'Sun')
                   } -%}
                   {%- set days_ns = namespace(display='') -%}
                   {%- if applicable_days | count >= 7 -%}
@@ -2048,6 +2095,233 @@ views:
                 {%- endif -%}
               {%- endif -%}
               {%- endif -%}
+
+        - type: custom:auto-entities
+          card:
+            type: grid
+            square: false
+            columns: 1
+          card_param: cards
+          filter:
+            template: |-
+              {#-- ===== ECONOMY MANAGEMENT ===== --#}
+
+              << template_snippets.meta_stamp >>
+
+
+              {#-- 1. User Configuration --#}
+
+              << template_snippets.user_override_helper >>
+
+              {%- set pref_economy_management_ui_control_key_root = 'admin-shared/economy-management' -%}
+
+              {%- set pref_economy_management_default_header_collapsed = true -%}
+
+              {%- set pref_economy_management_primary_tint_mix_pct = 14 -%}
+
+              {%- set pref_economy_management_show_header_background = true -%}
+
+              {%- set pref_economy_management_show_header_thin_border = true -%}
+
+
+              {#-- 2. Dynamic Lookups & Validations --#}
+
+              << template_snippets.admin_setup_shared >>
+
+              << template_snippets.admin_validation_missing_selector >>
+
+              {%- set pref_economy_management_ui_control_key_root = (pref_economy_management_ui_control_key_root | default('admin-shared/economy-management') | string) -%}
+              {%- set pref_economy_management_ui_control_key_root_segments = pref_economy_management_ui_control_key_root.split('/') | reject('equalto', '') | list -%}
+              {%- if pref_economy_management_ui_control_key_root_segments | length == 0 -%}
+                {%- set pref_economy_management_ui_control_key_root_segments = ['admin-shared', 'economy-management'] -%}
+              {%- endif -%}
+              {%- set pref_economy_management_ui_control_key_root = pref_economy_management_ui_control_key_root_segments | join('/') -%}
+              {%- set pref_economy_management_default_header_collapsed = (pref_economy_management_default_header_collapsed | default('true') | string | lower) == 'true' -%}
+              {%- set pref_economy_management_primary_tint_mix_pct = pref_economy_management_primary_tint_mix_pct | int(default=14) -%}
+              {%- set pref_economy_management_show_header_background = (pref_economy_management_show_header_background | default('true') | string | lower) == 'true' -%}
+              {%- set pref_economy_management_show_header_thin_border = (pref_economy_management_show_header_thin_border | default('true') | string | lower) == 'true' -%}
+              {%- if pref_economy_management_primary_tint_mix_pct < 0 -%}
+                {%- set pref_economy_management_primary_tint_mix_pct = 0 -%}
+              {%- elif pref_economy_management_primary_tint_mix_pct > 100 -%}
+                {%- set pref_economy_management_primary_tint_mix_pct = 100 -%}
+              {%- endif -%}
+
+              {%- if not skip_render -%}
+
+                {#-- 3. Initialize Variables --#}
+
+                {%- set helper_sensor_entities = integration_entities('choreops')
+                    | select('search', '^sensor\\.')
+                    | list
+                    | expand
+                    | selectattr('attributes.purpose', 'defined')
+                    | selectattr('attributes.purpose', 'eq', 'purpose_dashboard_helper')
+                    | selectattr('attributes.integration_entry_id', 'eq', entry_id)
+                    | sort(attribute='attributes.user_name')
+                    | list -%}
+                {%- set summary_helper = helper_sensor_entities[0].entity_id if helper_sensor_entities | count > 0 else '' -%}
+                {%- set ui = {} -%}
+                {%- if summary_helper not in ['', None, 'None'] -%}
+                  {%- set translation_sensor = (state_attr(summary_helper, 'dashboard_helpers') or {}).get('translation_sensor_eid') -%}
+                  {%- set ui = state_attr(translation_sensor, 'ui_translations') if translation_sensor else {} -%}
+                {%- else -%}
+                  {{ {
+                    'type': 'markdown',
+                    'content': "⚠️ **Dashboard configuration error**\n\nCannot find any dashboard helper entities for this shared admin view.\n\nCheck Settings → Integrations → ChoreOps and verify at least one user is configured."
+                  } }},
+                  {%- set skip_render = true -%}
+                {%- endif -%}
+              {%- endif -%}
+
+              {%- if not skip_render -%}
+
+                {#-- 4. Collect Data --#}
+
+                {%- set integration_entry_id = state_attr(summary_helper, 'integration_entry_id') if summary_helper not in ['', None, 'None'] else '' -%}
+                {%- set dashboard_helper_user_id = state_attr(summary_helper, 'user_id') if summary_helper not in ['', None, 'None'] else '' -%}
+                {%- set ui_control = state_attr(summary_helper, 'ui_control') | default({}, true) if summary_helper not in ['', None, 'None'] else {} -%}
+                {%- set ui_control_key_root = pref_economy_management_ui_control_key_root -%}
+                {%- set ui_control_key_header_collapsed = ui_control_key_root ~ '/header-collapse' -%}
+                {%- set ui_root = namespace(current=ui_control if ui_control is mapping else {}) -%}
+                {%- for segment in ui_control_key_root.split('/') -%}
+                  {%- if ui_root.current is mapping -%}
+                    {%- set ui_root.current = ui_root.current.get(segment, {}) -%}
+                  {%- else -%}
+                    {%- set ui_root.current = {} -%}
+                  {%- endif -%}
+                {%- endfor -%}
+                {%- set has_header_collapsed_override = ui_root.current is mapping and 'header-collapse' in ui_root.current -%}
+                {%- set selected_user_name = states(admin_selector_eid) if admin_selector_eid not in ['', None, 'None'] else '' -%}
+                {%- set has_selected_user = selected_user_name not in ['None', 'none', '', 'unknown', 'unavailable'] -%}
+                {%- set selected_helper_matches = helper_sensor_entities | selectattr('attributes.user_name', 'eq', selected_user_name) | list if has_selected_user else [] -%}
+                {%- set selected_dashboard_helper = state_attr(admin_selector_eid, 'dashboard_helper_eid') if has_selected_user and admin_selector_eid not in ['', None, 'None'] else '' -%}
+                {%- if selected_dashboard_helper in ['', None, 'None'] and selected_helper_matches | count > 0 -%}
+                  {%- set selected_dashboard_helper = selected_helper_matches[0].entity_id -%}
+                {%- endif -%}
+                {%- set has_selected_dashboard_helper = selected_dashboard_helper not in ['', None, 'None'] and states(selected_dashboard_helper) not in ['unknown', 'unavailable'] -%}
+                {%- set selected_dashboard_helpers = state_attr(selected_dashboard_helper, 'dashboard_helpers') or {} if has_selected_dashboard_helper else {} -%}
+                {%- set selected_core_sensors = state_attr(selected_dashboard_helper, 'core_sensors') or {} if has_selected_dashboard_helper else {} -%}
+                {%- set points_sensor = selected_core_sensors.get('points_eid') if has_selected_dashboard_helper else '' -%}
+                {%- set selected_translation_sensor = selected_dashboard_helpers.get('translation_sensor_eid') if has_selected_dashboard_helper else '' -%}
+                {%- set ui = state_attr(selected_translation_sensor, 'ui_translations') if selected_translation_sensor else ui -%}
+                {%- set selected_gamification_enabled = state_attr(selected_dashboard_helper, 'gamification_enabled') | default(false, true) if has_selected_dashboard_helper else false -%}
+                {%- set has_points_sensor = points_sensor not in ['', None, 'None'] and states(points_sensor) not in ['unknown', 'unavailable'] -%}
+                {%- set points_label = (state_attr(points_sensor, 'unit_of_measurement') if has_points_sensor else None) or 'Points' -%}
+                {%- set points_icon = (state_attr(points_sensor, 'icon') if has_points_sensor else None) or 'mdi:star-outline' -%}
+                {%- set points_total_display = states(points_sensor) if has_points_sensor and states(points_sensor) not in ['unknown', 'unavailable', 'None', ''] else '0' -%}
+                {%- set header_collapsed = (ui_root.current['header-collapse'] if has_header_collapsed_override else pref_economy_management_default_header_collapsed) | default(pref_economy_management_default_header_collapsed, true) -%}
+                {%- set header_collapsed = (header_collapsed | string | lower) == 'true' -%}
+                {%- set economy_label = (ui.get('viewing_selected_user', 'err-viewing_selected_user') ~ ': ' ~ selected_user_name) if has_selected_user else ui.get('select_user_first', 'err-select_user_first') -%}
+                {%- set economy_label_html = (
+                  "<span style='color:var(--secondary-text-color);'>" ~ ui.get('viewing_selected_user', 'err-viewing_selected_user') ~ ":</span> <span style='font-weight:700;color:var(--primary-text-color);'>" ~ (selected_user_name | e) ~ "</span>"
+                  if has_selected_user
+                  else economy_label
+                ) -%}
+
+                {#-- 5. Build Display --#}
+
+                {%- set economy_summary_card = {
+                  'type': 'custom:button-card',
+                  'entity': points_sensor if has_points_sensor else selected_dashboard_helper,
+                  'show_name': True,
+                  'show_label': False,
+                  'show_state': False,
+                  'show_icon': True,
+                  'icon': points_icon,
+                  'name': points_label,
+                  'label': economy_label,
+                  'tap_action': ({
+                    'action': 'call-service',
+                    'service': 'choreops.manage_ui_control',
+                    'data': {
+                      'config_entry_id': integration_entry_id,
+                      'user_id': dashboard_helper_user_id,
+                      'ui_control_action': 'update',
+                      'key': ui_control_key_header_collapsed,
+                      'value': false
+                    }
+                  } if header_collapsed and integration_entry_id not in ['', none] and dashboard_helper_user_id not in ['', none] else {
+                    'action': 'call-service',
+                    'service': 'choreops.manage_ui_control',
+                    'data': {
+                      'config_entry_id': integration_entry_id,
+                      'user_id': dashboard_helper_user_id,
+                      'ui_control_action': 'remove',
+                      'key': ui_control_key_header_collapsed
+                    }
+                  } if integration_entry_id not in ['', none] and dashboard_helper_user_id not in ['', none] else {
+                    'action': 'none'
+                  }),
+                  'hold_action': {'action': 'more-info'} if has_points_sensor else {'action': 'none'},
+                  'custom_fields': {
+                    'subtitle': economy_label_html,
+                    'target': "<div style='display:flex;flex-direction:column;align-items:flex-end;justify-content:center;line-height:1;max-width:200px;overflow:hidden;'><span style='display:block;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:16px;font-weight:700;color:var(--primary-text-color);'>" ~ points_total_display ~ "</span><span style='display:block;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-top:4px;font-size:10px;text-transform:uppercase;letter-spacing:0.06em;color:var(--primary-color);'>" ~ ui.get('available', 'err-available') ~ "</span></div>",
+                    'toggle': "<ha-icon icon='" ~ ('mdi:chevron-down' if header_collapsed else 'mdi:chevron-up') ~ "' style='width:18px;height:18px;color: var(--primary-color);'></ha-icon>"
+                  },
+                  'styles': {
+                    'card': [
+                      {'padding': '8px 16px'},
+                      {'border-radius': '16px'},
+                      {'box-shadow': 'none'},
+                      {'border': ('1px solid color-mix(in srgb, var(--primary-color) ' ~ pref_economy_management_primary_tint_mix_pct|string ~ '%, var(--divider-color))') if header_collapsed and pref_economy_management_show_header_thin_border else 'none' if header_collapsed else ('1px solid color-mix(in srgb, var(--primary-color) ' ~ pref_economy_management_primary_tint_mix_pct|string ~ '%, var(--divider-color))') if pref_economy_management_show_header_thin_border else 'none'},
+                      {'background-color': ('color-mix(in srgb, var(--primary-color) ' ~ pref_economy_management_primary_tint_mix_pct|string ~ '%, var(--card-background-color))') if header_collapsed and pref_economy_management_show_header_background else 'transparent' if header_collapsed else ('color-mix(in srgb, var(--primary-color) ' ~ pref_economy_management_primary_tint_mix_pct|string ~ '%, var(--card-background-color))') if pref_economy_management_show_header_background else 'transparent'}
+                    ],
+                    'grid': [
+                      {'grid-template-areas': '"i n target toggle" "i subtitle target toggle"'},
+                      {'grid-template-columns': '32px minmax(150px, 1fr) minmax(0, auto) min-content'},
+                      {'grid-template-rows': 'min-content min-content'},
+                      {'column-gap': '14px'},
+                      {'row-gap': '2px'},
+                      {'align-items': 'center'}
+                    ],
+                    'icon': [
+                      {'width': '24px'},
+                      {'height': '24px'},
+                      {'align-self': 'center'}
+                    ],
+                    'name': [
+                      {'justify-self': 'start'},
+                      {'min-width': '0'},
+                      {'width': '100%'},
+                      {'text-align': 'left'},
+                      {'font-size': '14px'},
+                      {'font-weight': '700'},
+                      {'line-height': '1.2'},
+                      {'text-transform': 'uppercase'}
+                    ],
+                    'custom_fields': {
+                      'subtitle': [
+                        {'justify-self': 'start'},
+                        {'min-width': '0'},
+                        {'width': '100%'},
+                        {'text-align': 'left'},
+                        {'font-size': '12px'},
+                        {'line-height': '1.35'},
+                        {'color': 'var(--secondary-text-color)'},
+                        {'white-space': 'normal'}
+                      ],
+                      'target': [
+                        {'justify-self': 'end'},
+                        {'align-self': 'center'},
+                        {'min-width': '0'},
+                        {'max-width': '200px'},
+                        {'text-align': 'right'}
+                      ],
+                      'toggle': [
+                        {'justify-self': 'end'},
+                        {'align-self': 'center'}
+                      ]
+                    }
+                  }
+                } -%}
+
+              {#-- 6. Render Logic --#}
+
+              {%- if has_selected_dashboard_helper and selected_gamification_enabled -%}
+                {{ economy_summary_card }},
+              {%- endif -%}
+              {%- endif -%}
+
 
         - type: custom:auto-entities
           card:
