@@ -74,25 +74,14 @@ views:
 
                 {#-- 3. Initialize Variables --#}
 
-                {%- set helper_sensor_entities = integration_entities('choreops')
-                    | select('search', '^sensor\\.')
-                    | list
-                    | expand
-                    | selectattr('attributes.purpose', 'defined')
-                    | selectattr('attributes.purpose', 'eq', 'purpose_dashboard_helper')
-                    | selectattr('attributes.integration_entry_id', 'eq', entry_id)
-                    | sort(attribute='attributes.user_name')
-                    | list -%}
                 {%- set ns = namespace(
                   lanes=[],
                   total_chore_pending=0,
                   total_reward_pending=0,
                   pending_user_count=0,
-                  summary_helper=''
+                  summary_helper=summary_helper
                 ) -%}
-                {%- if helper_sensor_entities | count > 0 -%}
-                  {%- set ns.summary_helper = helper_sensor_entities[0].entity_id -%}
-                {%- else -%}
+                {%- if ns.summary_helper in ['', None, 'None'] -%}
                   {{ {
                     'type': 'markdown',
                     'content': "⚠️ **Dashboard configuration error**\n\nCannot find any dashboard helper entities for this shared admin view.\n\nCheck Settings → Integrations → ChoreOps and verify at least one user is configured."
@@ -105,25 +94,19 @@ views:
 
                 {#-- 4. Collect Data --#}
 
-                {%- set ui = {} -%}
-                {%- if ns.summary_helper not in ['', None, 'None'] -%}
-                  {%- set translation_sensor = (state_attr(ns.summary_helper, 'dashboard_helpers') or {}).get('translation_sensor_eid') -%}
-                  {%- set ui = state_attr(translation_sensor, 'ui_translations') if translation_sensor else {} -%}
-                {%- endif -%}
-                {%- set integration_entry_id = state_attr(ns.summary_helper, 'integration_entry_id') if ns.summary_helper not in ['', None, 'None'] else '' -%}
-                {%- set dashboard_helper_user_id = state_attr(ns.summary_helper, 'user_id') if ns.summary_helper not in ['', None, 'None'] else '' -%}
-                {%- set ui_control = state_attr(ns.summary_helper, 'ui_control') | default({}, true) if ns.summary_helper not in ['', None, 'None'] else {} -%}
+                {%- set ui = shared_admin_ui -%}
+                {%- set integration_entry_id = state_attr(shared_admin_helper_eid, 'integration_entry_id') if shared_admin_helper_eid not in ['', None, 'None'] else '' -%}
                 {%- set ui_control_key_root = pref_ui_control_key_root -%}
                 {%- set ui_control_key_header_collapsed = ui_control_key_root ~ '/header-collapse' -%}
-                {%- set ui_root = namespace(current=ui_control if ui_control is mapping else {}) -%}
+                {%- set shared_admin_ui_root = namespace(current=ui_root.shared_admin if ui_root.shared_admin is mapping else {}) -%}
                 {%- for segment in ui_control_key_root.split('/') -%}
-                  {%- if ui_root.current is mapping -%}
-                    {%- set ui_root.current = ui_root.current.get(segment, {}) -%}
+                  {%- if shared_admin_ui_root.current is mapping -%}
+                    {%- set shared_admin_ui_root.current = shared_admin_ui_root.current.get(segment, {}) -%}
                   {%- else -%}
-                    {%- set ui_root.current = {} -%}
+                    {%- set shared_admin_ui_root.current = {} -%}
                   {%- endif -%}
                 {%- endfor -%}
-                {%- set has_header_collapsed_override = ui_root.current is mapping and 'header-collapse' in ui_root.current -%}
+                {%- set has_header_collapsed_override = shared_admin_ui_root.current is mapping and 'header-collapse' in shared_admin_ui_root.current -%}
 
                 {#-- 5. Build Display --#}
 
@@ -528,7 +511,7 @@ views:
                 {#-- 6. Render --#}
 
                 {%- set total_pending = ns.total_chore_pending + ns.total_reward_pending -%}
-                {%- set header_collapsed = ui_root.current['header-collapse'] if has_header_collapsed_override else (false if total_pending > 0 else pref_default_header_collapsed) -%}
+                {%- set header_collapsed = shared_admin_ui_root.current['header-collapse'] if has_header_collapsed_override else (false if total_pending > 0 else pref_default_header_collapsed) -%}
                 {%- set header_collapsed = (header_collapsed | string | lower) == 'true' -%}
                 {%- set show_summary_count = header_collapsed or total_pending == 0 -%}
                 {%- set collapsed_summary = "<div style='display:flex;flex-direction:column;align-items:flex-end;justify-content:center;line-height:1;'><span style='font-size:16px;font-weight:700;'>" ~ total_pending ~ "</span><span style='margin-top:4px;font-size:10px;text-transform:uppercase;letter-spacing:0.06em;color:var(--secondary-text-color);'>" ~ ui.get('approvals', 'err-approvals') ~ "</span></div>" -%}
@@ -548,21 +531,21 @@ views:
                   'service': 'choreops.manage_ui_control',
                   'data': {
                     'config_entry_id': integration_entry_id,
-                    'user_id': dashboard_helper_user_id,
+                    'ui_control_target': 'shared_admin',
                     'ui_control_action': 'remove',
                     'key': ui_control_key_header_collapsed
                   }
-                } if header_collapsed and integration_entry_id not in ['', none] and dashboard_helper_user_id not in ['', none] else {
+                } if header_collapsed and integration_entry_id not in ['', none] else {
                   'action': 'call-service',
                   'service': 'choreops.manage_ui_control',
                   'data': {
                     'config_entry_id': integration_entry_id,
-                    'user_id': dashboard_helper_user_id,
+                    'ui_control_target': 'shared_admin',
                     'ui_control_action': 'update',
                     'key': ui_control_key_header_collapsed,
                     'value': true
                   }
-                } if integration_entry_id not in ['', none] and dashboard_helper_user_id not in ['', none] else {
+                } if integration_entry_id not in ['', none] else {
                   'action': 'none'
                 }),
                 'hold_action': {'action': 'more-info'} if ns.summary_helper not in ['', None, 'None'] else {'action': 'none'},
@@ -691,21 +674,8 @@ views:
 
                 {#-- 3. Initialize Variables --#}
 
-                {%- set helper_sensor_entities = integration_entities('choreops')
-                    | select('search', '^sensor\\.')
-                    | list
-                    | expand
-                    | selectattr('attributes.purpose', 'defined')
-                    | selectattr('attributes.purpose', 'eq', 'purpose_dashboard_helper')
-                    | selectattr('attributes.integration_entry_id', 'eq', entry_id)
-                    | sort(attribute='attributes.user_name')
-                    | list -%}
-                {%- set summary_helper = helper_sensor_entities[0].entity_id if helper_sensor_entities | count > 0 else '' -%}
-                {%- set ui = {} -%}
-                {%- if summary_helper not in ['', None, 'None'] -%}
-                  {%- set translation_sensor = (state_attr(summary_helper, 'dashboard_helpers') or {}).get('translation_sensor_eid') -%}
-                  {%- set ui = state_attr(translation_sensor, 'ui_translations') if translation_sensor else {} -%}
-                {%- else -%}
+                {%- set ui = shared_admin_ui -%}
+                {%- if summary_helper in ['', None, 'None'] -%}
                   {{ {
                     'type': 'markdown',
                     'content': "⚠️ **Dashboard configuration error**\n\nCannot find any dashboard helper entities for this shared admin view.\n\nCheck Settings → Integrations → ChoreOps and verify at least one user is configured."
@@ -718,33 +688,24 @@ views:
 
                 {#-- 4. Collect Data --#}
 
-                {%- set integration_entry_id = state_attr(summary_helper, 'integration_entry_id') if summary_helper not in ['', None, 'None'] else '' -%}
-                {%- set dashboard_helper_user_id = state_attr(summary_helper, 'user_id') if summary_helper not in ['', None, 'None'] else '' -%}
-                {%- set ui_control = state_attr(summary_helper, 'ui_control') | default({}, true) if summary_helper not in ['', None, 'None'] else {} -%}
+                {%- set integration_entry_id = state_attr(shared_admin_helper_eid, 'integration_entry_id') if shared_admin_helper_eid not in ['', None, 'None'] else '' -%}
                 {%- set ui_control_key_root = pref_selector_ui_control_key_root -%}
                 {%- set ui_control_key_header_collapsed = ui_control_key_root ~ '/header-collapse' -%}
-                {%- set ui_root = namespace(current=ui_control if ui_control is mapping else {}) -%}
+                {%- set shared_admin_ui_root = namespace(current=ui_root.shared_admin if ui_root.shared_admin is mapping else {}) -%}
                 {%- for segment in ui_control_key_root.split('/') -%}
-                  {%- if ui_root.current is mapping -%}
-                    {%- set ui_root.current = ui_root.current.get(segment, {}) -%}
+                  {%- if shared_admin_ui_root.current is mapping -%}
+                    {%- set shared_admin_ui_root.current = shared_admin_ui_root.current.get(segment, {}) -%}
                   {%- else -%}
-                    {%- set ui_root.current = {} -%}
+                    {%- set shared_admin_ui_root.current = {} -%}
                   {%- endif -%}
                 {%- endfor -%}
-                {%- set has_header_collapsed_override = ui_root.current is mapping and 'header-collapse' in ui_root.current -%}
-                {%- set selected_user_name = states(admin_selector_eid) if admin_selector_eid not in ['', None, 'None'] else '' -%}
-                {%- set has_selected_user = selected_user_name not in ['None', 'none', '', 'unknown', 'unavailable'] -%}
+                {%- set has_header_collapsed_override = shared_admin_ui_root.current is mapping and 'header-collapse' in shared_admin_ui_root.current -%}
                 {%- set selected_user_display = selected_user_name if has_selected_user else '' -%}
-                {%- set selected_helper_matches = helper_sensor_entities | selectattr('attributes.user_name', 'eq', selected_user_name) | list if has_selected_user else [] -%}
-                {%- set selected_dashboard_helper = state_attr(admin_selector_eid, 'dashboard_helper_eid') if has_selected_user and admin_selector_eid not in ['', None, 'None'] else '' -%}
-                {%- if selected_dashboard_helper in ['', None, 'None'] and selected_helper_matches | count > 0 -%}
-                  {%- set selected_dashboard_helper = selected_helper_matches[0].entity_id -%}
-                {%- endif -%}
                 {%- set selected_helper_chores = state_attr(selected_dashboard_helper, 'chores') | default([], true) if selected_dashboard_helper not in ['', None, 'None'] and states(selected_dashboard_helper) not in ['unknown', 'unavailable'] else [] -%}
                 {%- set overdue_chore_count = selected_helper_chores | selectattr('state', 'eq', 'overdue') | list | count -%}
                 {%- set show_reset_all_overdue_card = has_selected_user and overdue_chore_count > 0 and integration_entry_id not in ['', None, 'None'] -%}
                 {%- set ns = namespace(chips=[]) -%}
-                {%- set header_collapsed = ui_root.current['header-collapse'] if has_header_collapsed_override else pref_selector_default_header_collapsed -%}
+                {%- set header_collapsed = shared_admin_ui_root.current['header-collapse'] if has_header_collapsed_override else pref_selector_default_header_collapsed -%}
                 {%- set header_collapsed = (header_collapsed | string | lower) == 'true' -%}
                 {%- set selector_label = ui.get('viewing_selected_user', 'err-viewing_selected_user') if has_selected_user else ui.get('choose_user_for_admin_actions', 'err-choose_user_for_admin_actions') -%}
                 {%- set selector_status_label = ui.get('active', 'err-active') if has_selected_user else '' -%}
@@ -767,21 +728,21 @@ views:
                     'service': 'choreops.manage_ui_control',
                     'data': {
                       'config_entry_id': integration_entry_id,
-                      'user_id': dashboard_helper_user_id,
+                      'ui_control_target': 'shared_admin',
                       'ui_control_action': 'update',
                       'key': ui_control_key_header_collapsed,
                       'value': false
                     }
-                  } if header_collapsed and integration_entry_id not in ['', none] and dashboard_helper_user_id not in ['', none] else {
+                  } if header_collapsed and integration_entry_id not in ['', none] else {
                     'action': 'call-service',
                     'service': 'choreops.manage_ui_control',
                     'data': {
                       'config_entry_id': integration_entry_id,
-                      'user_id': dashboard_helper_user_id,
+                      'ui_control_target': 'shared_admin',
                       'ui_control_action': 'remove',
                       'key': ui_control_key_header_collapsed
                     }
-                  } if integration_entry_id not in ['', none] and dashboard_helper_user_id not in ['', none] else {
+                  } if integration_entry_id not in ['', none] else {
                     'action': 'none'
                   }),
                   'hold_action': {'action': 'more-info'},
@@ -866,7 +827,7 @@ views:
                         'service': 'choreops.manage_ui_control',
                         'data': {
                           'config_entry_id': integration_entry_id,
-                          'user_id': dashboard_helper_user_id,
+                          'ui_control_target': 'shared_admin',
                           'ui_control_action': 'remove',
                           'key': ui_control_key_header_collapsed
                         }
@@ -916,7 +877,7 @@ views:
                           'service': 'choreops.manage_ui_control',
                           'data': {
                             'config_entry_id': integration_entry_id,
-                            'user_id': dashboard_helper_user_id,
+                            'ui_control_target': 'shared_admin',
                             'ui_control_action': 'remove',
                             'key': ui_control_key_header_collapsed
                           }
@@ -1079,21 +1040,8 @@ views:
 
                 {#-- 3. Initialize Variables --#}
 
-                {%- set helper_sensor_entities = integration_entities('choreops')
-                    | select('search', '^sensor\\.')
-                    | list
-                    | expand
-                    | selectattr('attributes.purpose', 'defined')
-                    | selectattr('attributes.purpose', 'eq', 'purpose_dashboard_helper')
-                    | selectattr('attributes.integration_entry_id', 'eq', entry_id)
-                    | sort(attribute='attributes.user_name')
-                    | list -%}
-                {%- set summary_helper = helper_sensor_entities[0].entity_id if helper_sensor_entities | count > 0 else '' -%}
-                {%- set ui = {} -%}
-                {%- if summary_helper not in ['', None, 'None'] -%}
-                  {%- set translation_sensor = (state_attr(summary_helper, 'dashboard_helpers') or {}).get('translation_sensor_eid') -%}
-                  {%- set ui = state_attr(translation_sensor, 'ui_translations') if translation_sensor else {} -%}
-                {%- else -%}
+                {%- set ui = shared_admin_ui -%}
+                {%- if summary_helper in ['', None, 'None'] -%}
                   {{ {
                     'type': 'markdown',
                     'content': "⚠️ **Dashboard configuration error**\n\nCannot find any dashboard helper entities for this shared admin view.\n\nCheck Settings → Integrations → ChoreOps and verify at least one user is configured."
@@ -1106,29 +1054,18 @@ views:
 
                 {#-- 4. Collect Data --#}
 
-                {%- set integration_entry_id = state_attr(summary_helper, 'integration_entry_id') if summary_helper not in ['', None, 'None'] else '' -%}
+                {%- set integration_entry_id = state_attr(shared_admin_helper_eid, 'integration_entry_id') if shared_admin_helper_eid not in ['', None, 'None'] else '' -%}
                 {%- set ui_control_key_root = pref_chore_management_ui_control_key_root -%}
                 {%- set ui_control_key_header_collapsed = ui_control_key_root ~ '/header-collapse' -%}
-                {%- set selected_user_name = states(admin_selector_eid) if admin_selector_eid not in ['', None, 'None'] else '' -%}
-                {%- set has_selected_user = selected_user_name not in ['None', 'none', '', 'unknown', 'unavailable'] -%}
-                {%- set selected_helper_matches = helper_sensor_entities | selectattr('attributes.user_name', 'eq', selected_user_name) | list if has_selected_user else [] -%}
-                {%- set selected_dashboard_helper = state_attr(admin_selector_eid, 'dashboard_helper_eid') if has_selected_user and admin_selector_eid not in ['', None, 'None'] else '' -%}
-                {%- if selected_dashboard_helper in ['', None, 'None'] and selected_helper_matches | count > 0 -%}
-                  {%- set selected_dashboard_helper = selected_helper_matches[0].entity_id -%}
-                {%- endif -%}
-                {%- set has_selected_dashboard_helper = selected_dashboard_helper not in ['', None, 'None'] and states(selected_dashboard_helper) not in ['unknown', 'unavailable'] -%}
-                {%- set ui_control_source = selected_dashboard_helper if has_selected_dashboard_helper else summary_helper -%}
-                {%- set dashboard_helper_user_id = state_attr(ui_control_source, 'user_id') if ui_control_source not in ['', None, 'None'] else '' -%}
-                {%- set ui_control = state_attr(ui_control_source, 'ui_control') | default({}, true) if ui_control_source not in ['', None, 'None'] else {} -%}
-                {%- set ui_root = namespace(current=ui_control if ui_control is mapping else {}) -%}
+                {%- set selected_user_ui_root = namespace(current=ui_root.selected_user if ui_root.selected_user is mapping else {}) -%}
                 {%- for segment in ui_control_key_root.split('/') -%}
-                  {%- if ui_root.current is mapping -%}
-                    {%- set ui_root.current = ui_root.current.get(segment, {}) -%}
+                  {%- if selected_user_ui_root.current is mapping -%}
+                    {%- set selected_user_ui_root.current = selected_user_ui_root.current.get(segment, {}) -%}
                   {%- else -%}
-                    {%- set ui_root.current = {} -%}
+                    {%- set selected_user_ui_root.current = {} -%}
                   {%- endif -%}
                 {%- endfor -%}
-                {%- set has_header_collapsed_override = ui_root.current is mapping and 'header-collapse' in ui_root.current -%}
+                {%- set has_header_collapsed_override = selected_user_ui_root.current is mapping and 'header-collapse' in selected_user_ui_root.current -%}
                 {%- set selected_dashboard_helpers = state_attr(selected_dashboard_helper, 'dashboard_helpers') or {} if has_selected_dashboard_helper else {} -%}
                 {%- set selected_core_sensors = state_attr(selected_dashboard_helper, 'core_sensors') or {} if has_selected_dashboard_helper else {} -%}
                 {%- set chore_select_entity = selected_dashboard_helpers.get('chore_select_eid') if has_selected_dashboard_helper else '' -%}
@@ -1146,7 +1083,7 @@ views:
                 {%- set selected_chore_matches = helper_chore_items | selectattr('name', 'eq', selected_chore_name) | list if has_selected_chore else [] -%}
                 {%- set selected_chore_sensor = selected_chore_matches[0].eid if selected_chore_matches | count > 0 else '' -%}
                 {%- set has_selected_chore_sensor = selected_chore_sensor not in ['', None, 'None'] and states(selected_chore_sensor) not in ['unknown', 'unavailable'] -%}
-                {%- set header_collapsed = (ui_root.current['header-collapse'] if has_header_collapsed_override else pref_chore_management_default_header_collapsed) | default(pref_chore_management_default_header_collapsed, true) -%}
+                {%- set header_collapsed = (selected_user_ui_root.current['header-collapse'] if has_header_collapsed_override else pref_chore_management_default_header_collapsed) | default(pref_chore_management_default_header_collapsed, true) -%}
                 {%- set header_collapsed = (header_collapsed | string | lower) == 'true' -%}
                 {%- set management_label = ui.get('viewing_selected_chore', 'err-viewing_selected_chore') if has_selected_chore else ui.get('choose_chore_for_admin_actions', 'err-choose_chore_for_admin_actions') if has_chore_selector else ui.get('chore_selector_unavailable', 'err-chore_selector_unavailable') if has_selected_dashboard_helper else ui.get('select_user_to_manage_chores_first', 'err-select_user_to_manage_chores_first') -%}
                 {%- set management_label_html = (
@@ -1171,21 +1108,23 @@ views:
                     'service': 'choreops.manage_ui_control',
                     'data': {
                       'config_entry_id': integration_entry_id,
-                      'user_id': dashboard_helper_user_id,
+                      'user_id': selected_user_id,
+                      'ui_control_target': 'user',
                       'ui_control_action': 'update',
                       'key': ui_control_key_header_collapsed,
                       'value': false
                     }
-                  } if header_collapsed and integration_entry_id not in ['', none] and dashboard_helper_user_id not in ['', none] else {
+                  } if header_collapsed and integration_entry_id not in ['', none] and selected_user_id not in ['', none] else {
                     'action': 'call-service',
                     'service': 'choreops.manage_ui_control',
                     'data': {
                       'config_entry_id': integration_entry_id,
-                      'user_id': dashboard_helper_user_id,
+                      'user_id': selected_user_id,
+                      'ui_control_target': 'user',
                       'ui_control_action': 'remove',
                       'key': ui_control_key_header_collapsed
                     }
-                  } if integration_entry_id not in ['', none] and dashboard_helper_user_id not in ['', none] else {
+                  } if integration_entry_id not in ['', none] and selected_user_id not in ['', none] else {
                     'action': 'none'
                   }),
                   'hold_action': {'action': 'more-info'} if chore_select_entity not in ['', None, 'None'] else {'action': 'none'},
@@ -2150,21 +2089,8 @@ views:
 
                 {#-- 3. Initialize Variables --#}
 
-                {%- set helper_sensor_entities = integration_entities('choreops')
-                    | select('search', '^sensor\\.')
-                    | list
-                    | expand
-                    | selectattr('attributes.purpose', 'defined')
-                    | selectattr('attributes.purpose', 'eq', 'purpose_dashboard_helper')
-                    | selectattr('attributes.integration_entry_id', 'eq', entry_id)
-                    | sort(attribute='attributes.user_name')
-                    | list -%}
-                {%- set summary_helper = helper_sensor_entities[0].entity_id if helper_sensor_entities | count > 0 else '' -%}
-                {%- set ui = {} -%}
-                {%- if summary_helper not in ['', None, 'None'] -%}
-                  {%- set translation_sensor = (state_attr(summary_helper, 'dashboard_helpers') or {}).get('translation_sensor_eid') -%}
-                  {%- set ui = state_attr(translation_sensor, 'ui_translations') if translation_sensor else {} -%}
-                {%- else -%}
+                {%- set ui = shared_admin_ui -%}
+                {%- if summary_helper in ['', None, 'None'] -%}
                   {{ {
                     'type': 'markdown',
                     'content': "⚠️ **Dashboard configuration error**\n\nCannot find any dashboard helper entities for this shared admin view.\n\nCheck Settings → Integrations → ChoreOps and verify at least one user is configured."
@@ -2177,28 +2103,18 @@ views:
 
                 {#-- 4. Collect Data --#}
 
-                {%- set integration_entry_id = state_attr(summary_helper, 'integration_entry_id') if summary_helper not in ['', None, 'None'] else '' -%}
-                {%- set dashboard_helper_user_id = state_attr(summary_helper, 'user_id') if summary_helper not in ['', None, 'None'] else '' -%}
-                {%- set ui_control = state_attr(summary_helper, 'ui_control') | default({}, true) if summary_helper not in ['', None, 'None'] else {} -%}
+                {%- set integration_entry_id = state_attr(shared_admin_helper_eid, 'integration_entry_id') if shared_admin_helper_eid not in ['', None, 'None'] else '' -%}
                 {%- set ui_control_key_root = pref_economy_management_ui_control_key_root -%}
                 {%- set ui_control_key_header_collapsed = ui_control_key_root ~ '/header-collapse' -%}
-                {%- set ui_root = namespace(current=ui_control if ui_control is mapping else {}) -%}
+                {%- set selected_user_ui_root = namespace(current=ui_root.selected_user if ui_root.selected_user is mapping else {}) -%}
                 {%- for segment in ui_control_key_root.split('/') -%}
-                  {%- if ui_root.current is mapping -%}
-                    {%- set ui_root.current = ui_root.current.get(segment, {}) -%}
+                  {%- if selected_user_ui_root.current is mapping -%}
+                    {%- set selected_user_ui_root.current = selected_user_ui_root.current.get(segment, {}) -%}
                   {%- else -%}
-                    {%- set ui_root.current = {} -%}
+                    {%- set selected_user_ui_root.current = {} -%}
                   {%- endif -%}
                 {%- endfor -%}
-                {%- set has_header_collapsed_override = ui_root.current is mapping and 'header-collapse' in ui_root.current -%}
-                {%- set selected_user_name = states(admin_selector_eid) if admin_selector_eid not in ['', None, 'None'] else '' -%}
-                {%- set has_selected_user = selected_user_name not in ['None', 'none', '', 'unknown', 'unavailable'] -%}
-                {%- set selected_helper_matches = helper_sensor_entities | selectattr('attributes.user_name', 'eq', selected_user_name) | list if has_selected_user else [] -%}
-                {%- set selected_dashboard_helper = state_attr(admin_selector_eid, 'dashboard_helper_eid') if has_selected_user and admin_selector_eid not in ['', None, 'None'] else '' -%}
-                {%- if selected_dashboard_helper in ['', None, 'None'] and selected_helper_matches | count > 0 -%}
-                  {%- set selected_dashboard_helper = selected_helper_matches[0].entity_id -%}
-                {%- endif -%}
-                {%- set has_selected_dashboard_helper = selected_dashboard_helper not in ['', None, 'None'] and states(selected_dashboard_helper) not in ['unknown', 'unavailable'] -%}
+                {%- set has_header_collapsed_override = selected_user_ui_root.current is mapping and 'header-collapse' in selected_user_ui_root.current -%}
                 {%- set selected_dashboard_helpers = state_attr(selected_dashboard_helper, 'dashboard_helpers') or {} if has_selected_dashboard_helper else {} -%}
                 {%- set selected_core_sensors = state_attr(selected_dashboard_helper, 'core_sensors') or {} if has_selected_dashboard_helper else {} -%}
                 {%- set points_sensor = selected_core_sensors.get('points_eid') if has_selected_dashboard_helper else '' -%}
@@ -2209,7 +2125,7 @@ views:
                 {%- set points_label = (state_attr(points_sensor, 'unit_of_measurement') if has_points_sensor else None) or 'Points' -%}
                 {%- set points_icon = (state_attr(points_sensor, 'icon') if has_points_sensor else None) or 'mdi:star-outline' -%}
                 {%- set points_total_display = states(points_sensor) if has_points_sensor and states(points_sensor) not in ['unknown', 'unavailable', 'None', ''] else '0' -%}
-                {%- set header_collapsed = (ui_root.current['header-collapse'] if has_header_collapsed_override else pref_economy_management_default_header_collapsed) | default(pref_economy_management_default_header_collapsed, true) -%}
+                {%- set header_collapsed = (selected_user_ui_root.current['header-collapse'] if has_header_collapsed_override else pref_economy_management_default_header_collapsed) | default(pref_economy_management_default_header_collapsed, true) -%}
                 {%- set header_collapsed = (header_collapsed | string | lower) == 'true' -%}
                 {%- set economy_label = (ui.get('viewing_selected_user', 'err-viewing_selected_user') ~ ': ' ~ selected_user_name) if has_selected_user else ui.get('select_user_first', 'err-select_user_first') -%}
                 {%- set economy_label_html = (
@@ -2235,21 +2151,23 @@ views:
                     'service': 'choreops.manage_ui_control',
                     'data': {
                       'config_entry_id': integration_entry_id,
-                      'user_id': dashboard_helper_user_id,
+                      'user_id': selected_user_id,
+                      'ui_control_target': 'user',
                       'ui_control_action': 'update',
                       'key': ui_control_key_header_collapsed,
                       'value': false
                     }
-                  } if header_collapsed and integration_entry_id not in ['', none] and dashboard_helper_user_id not in ['', none] else {
+                  } if header_collapsed and integration_entry_id not in ['', none] and selected_user_id not in ['', none] else {
                     'action': 'call-service',
                     'service': 'choreops.manage_ui_control',
                     'data': {
                       'config_entry_id': integration_entry_id,
-                      'user_id': dashboard_helper_user_id,
+                      'user_id': selected_user_id,
+                      'ui_control_target': 'user',
                       'ui_control_action': 'remove',
                       'key': ui_control_key_header_collapsed
                     }
-                  } if integration_entry_id not in ['', none] and dashboard_helper_user_id not in ['', none] else {
+                  } if integration_entry_id not in ['', none] and selected_user_id not in ['', none] else {
                     'action': 'none'
                   }),
                   'hold_action': {'action': 'more-info'} if has_points_sensor else {'action': 'none'},
@@ -2349,18 +2267,7 @@ views:
 
               {%- if not skip_render -%}
 
-                {%- set helper_sensor_entities = integration_entities('choreops')
-                    | select('search', '^sensor\\.')
-                    | list
-                    | expand
-                    | selectattr('attributes.purpose', 'defined')
-                    | selectattr('attributes.purpose', 'eq', 'purpose_dashboard_helper')
-                    | selectattr('attributes.integration_entry_id', 'eq', entry_id)
-                    | sort(attribute='attributes.user_name')
-                    | list -%}
-                {%- set summary_helper = helper_sensor_entities[0].entity_id if helper_sensor_entities | count > 0 else '' -%}
-                {%- set translation_sensor = (state_attr(summary_helper, 'dashboard_helpers') or {}).get('translation_sensor_eid') if summary_helper not in ['', None, 'None'] else '' -%}
-                {%- set ui = state_attr(translation_sensor, 'ui_translations') if translation_sensor not in ['', None, 'None'] else {} -%}
+                {%- set ui = shared_admin_ui -%}
 
                 {{ {
                   'type': 'custom:button-card',

@@ -208,6 +208,11 @@
             "url": "https://github.com/thomasloven/lovelace-auto-entities"
           },
           {
+            "id": "ha-card:button-card",
+            "name": "Button Card",
+            "url": "https://github.com/custom-cards/button-card"
+          },
+          {
             "id": "ha-card:mini-graph-card",
             "name": "Mini Graph Card",
             "url": "https://github.com/kalkih/mini-graph-card"
@@ -230,7 +235,7 @@
       }
     },
     {
-      "template_id": "admin-shared-kidschores-classic",
+      "template_id": "admin-shared-kidschores-classic-v1",
       "display_name": "Admin (Shared) KidsChores Classic",
       "description": "Classic admin dashboard with shared selector workflow",
       "audience": "approver",
@@ -272,7 +277,7 @@
       }
     },
     {
-      "template_id": "admin-peruser-kidschores-classic",
+      "template_id": "admin-peruser-kidschores-classic-v1",
       "display_name": "Admin (Per User) KidsChores Classic",
       "description": "Classic admin dashboard with per-user tab workflow",
       "audience": "approver",

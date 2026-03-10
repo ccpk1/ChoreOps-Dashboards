@@ -90,8 +90,8 @@ The current manifest uses immutable template IDs:
 - `user-kidschores-classic-v1` → `templates/user-kidschores-classic-v1.yaml`
 - `admin-shared-v1` → `templates/admin-shared-v1.yaml`
 - `admin-peruser-v1` → `templates/admin-peruser-v1.yaml`
-- `admin-shared-kidschores-classic` → `templates/admin-shared-kidschores-classic.yaml`
-- `admin-peruser-kidschores-classic` → `templates/admin-peruser-kidschores-classic.yaml`
+- `admin-shared-kidschores-classic-v1` → `templates/admin-shared-kidschores-classic.yaml`
+- `admin-peruser-kidschores-classic-v1` → `templates/admin-peruser-kidschores-classic.yaml`
 
 Matching preference docs:
 
