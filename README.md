@@ -1,11 +1,51 @@
 # ChoreOps Dashboards
 
+[![Main Integration](https://img.shields.io/badge/Main_Integration-ccpk1%2Fchoreops-blue?style=for-the-badge&logo=github)](https://github.com/ccpk1/choreops)
+[![Sponsor](https://img.shields.io/badge/Sponsor-%E2%9D%A4-pink?style=for-the-badge&logo=github)](https://github.com/sponsors/ccpk1)
+[![Buy Me A Coffee](https://img.shields.io/badge/Buy_Me_A_Coffee-FFDD00?style=for-the-badge&logo=buy-me-a-coffee&logoColor=black)](https://buymeacoffee.com/ccpk1)
+
 Dashboard template registry for ChoreOps.
+
+> ⚠️ **Note for Users:** You do not need to download or install anything from this repository! All dashboard templates are automatically downloaded, updated, and managed directly through the main [ChoreOps Integration](https://github.com/ccpk1/choreops).
 
 This repository is the dedicated source for Lovelace dashboard templates used by the ChoreOps integration. It is designed to support a dual-repository model where:
 
 - `ccpk1/choreops` provides integration/backend logic
 - `ccpk1/choreops-dashboards` provides dashboard manifests and template YAML assets
+
+## Template Gallery
+
+_(Visual representations of the current templates available through the ChoreOps integration.)_
+
+### User Dashboards
+
+- **Essential Chores** (`user-chores-essential-v1`)
+  - _The baseline._ Features simplified logic and inline Jinja/YAML, making it incredibly easy to customize, tweak, or strip down to exactly what you need.
+
+- **Standard Chores** (`user-chores-standard-v1`)
+  - _The daily driver._ Delivers full-featured chore tracking logic with adaptable layouts designed specifically to work well for both adults and kids.
+
+- **Premier Gamification** (`user-gamification-premier-v1`)
+  - _The ultimate experience._ Built for maximum motivation, featuring robust XP tracking, achievement badges, and visual progress bars to turn household routines into a rewarding game.
+
+- **Classic KidsChores** (`user-kidschores-classic-v1`)
+  - _The faithful throwback._ A direct recreation of the original integration's UI, providing a comfortable and seamless migration for legacy users.
+
+### Admin Dashboards
+
+- **Shared Admin** (`admin-shared-v1`)
+  - A centralized control panel featuring a dropdown selector. Perfect for managing the entire household's chores and approvals from a single, unified view.
+
+- **Per-User Admin** (`admin-peruser-v1`)
+  - Generates a dedicated, individualized admin dashboard for each specific user. Ideal for separating controls on personalized wall panels or personal devices.
+
+- **Classic Shared Admin** (`admin-shared-kidschores-classic-v1`)
+  - The familiar, unified dropdown view from the original KidsChores integration.
+
+- **Classic Per-User Admin** (`admin-peruser-kidschores-classic-v1`)
+  - The familiar, individualized admin views from the original KidsChores integration.
+
+---
 
 ## Repository roles and support policy
 
@@ -17,8 +57,8 @@ The primary ChoreOps product repository is [`ccpk1/choreops`](https://github.com
 
 Issue routing:
 
-- Integration/runtime/support issues: <https://github.com/ccpk1/choreops/issues>
-- Dashboard template asset issues (template YAML, registry metadata, preference docs, dashboard translation assets): <https://github.com/ccpk1/choreops-dashboards/issues>
+- Integration/runtime/support issues: https://github.com/ccpk1/choreops/issues
+- Dashboard template asset issues (template YAML, registry metadata, preference docs, dashboard translation assets): https://github.com/ccpk1/choreops-dashboards/issues
 
 ## Purpose
 
@@ -37,6 +77,7 @@ Issue routing:
 │   ├── *.md
 └── translations/              # Dashboard UI translation assets
 		├── {lang}_dashboard.json
+
 ```
 
 ## Current template IDs
@@ -94,11 +135,11 @@ Optional metadata (not currently populated in the checked-in manifest):
 - Template preference guidance is stored in `preferences/`.
 - Each template should have a corresponding preference document referenced by manifest preference metadata.
 - Preference docs are user-facing and should document:
-  - supported `pref_*` keys,
-  - default values,
-  - valid values/ranges,
-  - card-level behavior notes when multiple cards consume preferences,
-  - rebuild/overwrite caveats.
+- supported `pref_*` keys,
+- default values,
+- valid values/ranges,
+- card-level behavior notes when multiple cards consume preferences,
+- rebuild/overwrite caveats.
 
 ## Notes
 
@@ -122,9 +163,8 @@ Compatibility is tracked through release notes and the compatibility matrix, and
 
 Record compatibility for each dashboard release in release notes or PR description.
 
-| Integration release | Dashboard registry release | Channel | Compatibility status | Notes                               |
-| ------------------- | -------------------------- | ------- | -------------------- | ----------------------------------- |
-| `0.5.0-beta.5`      | `0.1.0-beta.1`             | beta    | verified             | Initial dashboard registry baseline |
+| Integration release | Dashboard registry release | Channel | Compatibility status | Notes |
+| `0.5.0-beta.5` | `0.1.0-beta.1` | beta | verified | Initial dashboard registry baseline |
 
 Compatibility status values:
 
@@ -174,7 +214,6 @@ If you are unsure about scope or naming, open a discussion in the main repositor
 All dashboard template PRs must follow these standards:
 
 - Canonical standards reference: [Dashboard Template Guide](https://github.com/ccpk1/choreops/blob/main/docs/DASHBOARD_TEMPLATE_GUIDE.md)
-
 - **Dynamic, instance-aware lookup patterns only**
   - Always use dynamic lookup patterns for dashboard helper entities and related sensors.
   - Lookups must be integration-instance aware.
@@ -223,6 +262,15 @@ Promotion flow:
 3. Publish beta tag when stabilization is needed.
 4. Promote validated commit to stable tag.
 
+---
+
+## ❤️ Support the Project
+
+If ChoreOps helps keep your household running smoothly, consider fueling its development! Since this dashboard repository provides continuous "Over-The-Air" UI updates independently of the main integration, your support helps maintain and expand these templates.
+
+- 💖 **[Sponsor on GitHub](https://www.google.com/url?sa=E&source=gmail&q=https://github.com/sponsors/ccpk1)** (Primary)
+- ☕ **[Buy me a Coffee](https://buymeacoffee.com/ccpk1)** (One-time tip)
+
 ## License
 
-This project is licensed under the GPL-3.0 license. See [LICENSE](LICENSE).
+This project is licensed under the GPL-3.0 license. See [LICENSE](https://www.google.com/search?q=LICENSE).

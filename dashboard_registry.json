@@ -176,19 +176,9 @@
             "url": "https://github.com/thomasloven/lovelace-auto-entities"
           },
           {
-            "id": "ha-card:mini-graph-card",
-            "name": "Mini Graph Card",
-            "url": "https://github.com/kalkih/mini-graph-card"
-          },
-          {
-            "id": "ha-card:mushroom-select-card",
-            "name": "Mushroom Cards",
-            "url": "https://github.com/piitaya/lovelace-mushroom"
-          },
-          {
-            "id": "ha-card:mushroom-template-card",
-            "name": "Mushroom Cards",
-            "url": "https://github.com/piitaya/lovelace-mushroom"
+            "id": "ha-card:button-card",
+            "name": "Button Card",
+            "url": "https://github.com/custom-cards/button-card"
           }
         ],
         "recommended": []

@@ -650,7 +650,7 @@ views:
                                     'tap_action': {
                                       'action': "[[[ const rawState = entity.state; const state = (rawState === 'approved' || rawState === 'already_approved') ? 'completed' : (rawState === 'approved_in_part' ? 'completed_in_part' : rawState); const canClaim = entity.attributes.can_claim === true; if ((!canClaim && state !== 'claimed') || ['completed', 'completed_in_part'].includes(state)) return 'none'; return 'call-service'; ]]]",
                                       'service': 'button.press',
-                                      'service_data': {
+                                      'data': {
                                         'entity_id': "[[[ const rawState = entity.state; const state = (rawState === 'approved' || rawState === 'already_approved') ? 'completed' : (rawState === 'approved_in_part' ? 'completed_in_part' : rawState); if (state === 'claimed') return entity.attributes.disapprove_button_eid || entity.attributes.approve_button_eid; const claimButton = entity.attributes.claim_button_eid; if (claimButton) return claimButton; return entity.attributes.approve_button_eid; ]]]"
                                       }
                                     }
