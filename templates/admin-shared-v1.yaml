@@ -1080,10 +1080,20 @@ views:
                 {%- set helper_chore_items = state_attr(selected_dashboard_helper, 'chores') | default([], true) if has_selected_dashboard_helper else [] -%}
                 {%- set overdue_chore_items = helper_chore_items | selectattr('state', 'eq', 'overdue') | list if has_selected_dashboard_helper else [] -%}
                 {%- set overdue_chore_count = overdue_chore_items | count -%}
-                {%- set selected_chore_matches = helper_chore_items | selectattr('name', 'eq', selected_chore_name) | list if has_selected_chore else [] -%}
-                {%- set selected_chore_sensor = selected_chore_matches[0].eid if selected_chore_matches | count > 0 else '' -%}
+                {%- set selected_chore_lookup_name = selected_chore_name | string | trim if has_selected_chore else '' -%}
+                {%- set selected_chore_sensor_ns = namespace(entity_id='') -%}
+                {%- if has_selected_chore -%}
+                  {%- for helper_chore in helper_chore_items -%}
+                    {%- set helper_chore_name = helper_chore.name | default('', true) | string | trim -%}
+                    {%- if selected_chore_sensor_ns.entity_id == '' and helper_chore_name == selected_chore_lookup_name -%}
+                      {%- set selected_chore_sensor_ns.entity_id = helper_chore.eid | default('', true) -%}
+                    {%- endif -%}
+                  {%- endfor -%}
+                {%- endif -%}
+                {%- set selected_chore_sensor = selected_chore_sensor_ns.entity_id -%}
                 {%- set has_selected_chore_sensor = selected_chore_sensor not in ['', None, 'None'] and states(selected_chore_sensor) not in ['unknown', 'unavailable'] -%}
-                {%- set header_collapsed = (selected_user_ui_root.current['header-collapse'] if has_header_collapsed_override else pref_chore_management_default_header_collapsed) | default(pref_chore_management_default_header_collapsed, true) -%}
+                {%- set has_resolved_selected_chore = has_selected_chore and has_selected_chore_sensor -%}
+                {%- set header_collapsed = selected_user_ui_root.current['header-collapse'] if has_header_collapsed_override else pref_chore_management_default_header_collapsed -%}
                 {%- set header_collapsed = (header_collapsed | string | lower) == 'true' -%}
                 {%- set management_label = ui.get('viewing_selected_chore', 'err-viewing_selected_chore') if has_selected_chore else ui.get('choose_chore_for_admin_actions', 'err-choose_chore_for_admin_actions') if has_chore_selector else ui.get('chore_selector_unavailable', 'err-chore_selector_unavailable') if has_selected_dashboard_helper else ui.get('select_user_to_manage_chores_first', 'err-select_user_to_manage_chores_first') -%}
                 {%- set management_label_html = (
@@ -1138,8 +1148,8 @@ views:
                       {'padding': '8px 16px'},
                       {'border-radius': '16px'},
                       {'box-shadow': 'none'},
-                      {'border': ('1px solid color-mix(in srgb, var(--primary-color) ' ~ pref_chore_management_primary_tint_mix_pct|string ~ '%, var(--divider-color))') if header_collapsed and pref_chore_management_show_header_thin_border else 'none' if header_collapsed else ('1px solid color-mix(in srgb, var(--primary-color) ' ~ pref_chore_management_primary_tint_mix_pct|string ~ '%, var(--divider-color))') if has_selected_chore and pref_chore_management_show_header_thin_border else 'none' if has_selected_chore else '1px solid var(--divider-color)'},
-                      {'background-color': ('color-mix(in srgb, var(--primary-color) ' ~ pref_chore_management_primary_tint_mix_pct|string ~ '%, var(--card-background-color))') if header_collapsed and pref_chore_management_show_header_background else 'transparent' if header_collapsed else ('color-mix(in srgb, var(--primary-color) ' ~ pref_chore_management_primary_tint_mix_pct|string ~ '%, var(--card-background-color))') if has_selected_chore and pref_chore_management_show_header_background else 'transparent'}
+                      {'border': 'none' if has_selected_chore else ('1px solid color-mix(in srgb, var(--primary-color) ' ~ pref_chore_management_primary_tint_mix_pct|string ~ '%, var(--divider-color))') if header_collapsed and pref_chore_management_show_header_thin_border else 'none' if header_collapsed else '1px solid var(--divider-color)'},
+                      {'background-color': 'transparent' if has_selected_chore else ('color-mix(in srgb, var(--primary-color) ' ~ pref_chore_management_primary_tint_mix_pct|string ~ '%, var(--card-background-color))') if header_collapsed and pref_chore_management_show_header_background else 'transparent'}
                     ],
                     'grid': [
                       {'grid-template-areas': '"i n target toggle" "i subtitle target toggle"' if has_selected_chore else '"i n toggle" "i subtitle toggle"'},
@@ -1298,6 +1308,10 @@ views:
                 {%- set chore_selector_error_card = {
                   'type': 'markdown',
                   'content': "⚠️ **Dashboard configuration error**\n\nThe selected profile does not expose a chore selector helper for this shared admin view.\n\nReopen the profile from the Management section or verify the ChoreOps dashboard helper entities are available for that user."
+                } -%}
+                {%- set selected_chore_resolution_error_card = {
+                  'type': 'markdown',
+                  'content': "⚠️ **Dashboard configuration error**\n\nThe selected chore could not be resolved for this shared admin view.\n\nClear the chore selection and choose it again. If the problem persists, reopen the profile from the Management section and verify the ChoreOps chore helper entities are available for that user."
                 } -%}
                 {%- set chore_select_card = {
                   'type': 'entities',
@@ -2025,8 +2039,10 @@ views:
                 {%- if not header_collapsed -%}
                   {%- if has_chore_selector and chore_select_card not in [none, None] -%}
                     {{ chore_select_card }},
-                    {%- if has_selected_chore and chore_overview_card not in [none, None] -%}
+                    {%- if has_resolved_selected_chore and chore_overview_card not in [none, None] -%}
                       {{ chore_overview_card }},
+                    {%- elif has_selected_chore -%}
+                      {{ selected_chore_resolution_error_card }},
                     {%- endif -%}
                   {%- else -%}
                     {{ chore_selector_error_card }},
