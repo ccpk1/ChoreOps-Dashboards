@@ -6,12 +6,12 @@ name: Dashboard Translation Sync
 #   - Source: translations/en_dashboard.json
 #
 # The workflow runs automatically when English dashboard source files are modified,
-# or can be triggered manually from the Actions tab for the integration branch.
+# or can be triggered manually from the Actions tab for the default branch.
 
 on:
   push:
     branches:
-      - dev
+      - main
     paths:
       - "translations/en_dashboard.json"
       - "crowdin.yml"
@@ -22,7 +22,7 @@ on:
         description: "Branch to sync translations for"
         required: false
         type: string
-        default: dev
+        default: main
 
 permissions:
   contents: write
