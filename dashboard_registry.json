@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "release_version": "1.0.1",
+  "release_version": "1.0.2",
   "repo": "ccpk1/ChoreOps-Dashboards",
   "title": "ChoreOps Dashboard Registry",
   "description": "Registry manifest for ChoreOps dashboard templates",
@@ -78,6 +78,33 @@
       },
       "preferences": {
         "doc_asset_path": "preferences/user-chores-essential-v1.md"
+      }
+    },
+    {
+      "template_id": "user-chores-lite-v1",
+      "display_name": "Chores Lite",
+      "description": "Dynamic lightweight user dashboard using native markdown and tile cards with auto-entities only",
+      "audience": "user",
+      "category": "minimal",
+      "lifecycle_state": "active",
+      "min_integration_version": "1.0.0",
+      "maintainer": "ccpk1",
+      "source": {
+        "type": "vendored",
+        "path": "templates/user-chores-lite-v1.yaml"
+      },
+      "dependencies": {
+        "required": [
+          {
+            "id": "ha-card:auto-entities",
+            "name": "Auto-Entities",
+            "url": "https://github.com/thomasloven/lovelace-auto-entities"
+          }
+        ],
+        "recommended": []
+      },
+      "preferences": {
+        "doc_asset_path": "preferences/user-chores-lite-v1.md"
       }
     },
     {
