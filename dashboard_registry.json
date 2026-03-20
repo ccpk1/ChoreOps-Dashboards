@@ -189,7 +189,7 @@
       "audience": "approver",
       "category": "admin",
       "lifecycle_state": "active",
-      "min_integration_version": "1.0.0",
+      "min_integration_version": "1.0.5",
       "maintainer": "ccpk1",
       "source": {
         "type": "vendored",
@@ -224,7 +224,7 @@
       "audience": "approver",
       "category": "admin",
       "lifecycle_state": "active",
-      "min_integration_version": "1.0.0",
+      "min_integration_version": "1.0.5",
       "maintainer": "ccpk1",
       "source": {
         "type": "vendored",
