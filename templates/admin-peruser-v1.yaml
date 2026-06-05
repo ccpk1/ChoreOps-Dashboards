@@ -805,7 +805,7 @@ views:
                       {'border-radius': '16px'},
                       {'box-shadow': 'none'},
                       {'border': ('1px solid color-mix(in srgb, var(--primary-color) ' ~ pref_selector_primary_tint_mix_pct|string ~ '%, var(--divider-color))') if header_collapsed and pref_selector_show_header_thin_border else 'none' if header_collapsed else ('1px solid color-mix(in srgb, var(--primary-color) ' ~ pref_selector_primary_tint_mix_pct|string ~ '%, var(--divider-color))') if pref_selector_show_header_thin_border else 'none'},
-                      {'background-color': ('color-mix(in srgb, var(--primary-color) ' ~ pref_selector_primary_tint_mix_pct|string ~ '%, var(--card-background-color))') if header_collapsed and pref_selector_show_header_background else 'transparent' if header_collapsed else ('color-mix(in srgb, var(--primary-color) ' ~ pref_selector_primary_tint_mix_pct|string ~ '%, var(--card-background-color))') if pref_selector_show_header_background else 'transparent'}
+                      {'background-color': ('color-mix(in srgb, var(--primary-color) ' ~ pref_selector_primary_tint_mix_pct|string ~ '%, var(--card-background-color))') if header_collapsed and pref_selector_show_header_background else 'transparent'}
                     ],
                     'grid': [
                       {'grid-template-areas': '"i n target toggle" "i l target toggle"' if has_selected_user else '"i n toggle" "i l toggle"'},
@@ -854,263 +854,6 @@ views:
                 {#-- 6. Render --#}
 
                 {{ selector_summary_card }},
-                {%- if show_reset_all_overdue_card -%}
-                {{ {
-                  'type': 'custom:button-card',
-                  'entity': selected_dashboard_helper,
-                  'show_name': True,
-                  'show_label': True,
-                  'show_state': False,
-                  'show_icon': True,
-                  'icon': 'mdi:restore-alert',
-                  'name': ui.get('reset_all', 'err-reset_all'),
-                  'label': selected_user_name ~ ' • ' ~ overdue_chore_count ~ ' ' ~ ui.get('overdue_chores', 'err-overdue_chores'),
-                  'tap_action': {
-                    'action': 'call-service',
-                    'service': 'choreops.reset_overdue_chores',
-                    'data': {
-                      'config_entry_id': integration_entry_id,
-                      'user_name': selected_user_name
-                    }
-                  },
-                  'hold_action': {'action': 'more-info'},
-                  'styles': {
-                    'card': [
-                      {'padding': '10px 14px'},
-                      {'margin-top': '0px'},
-                      {'border-radius': '14px'},
-                      {'box-shadow': 'none'},
-                      {'border': '1px solid color-mix(in srgb, var(--warning-color) 18%, var(--divider-color))'},
-                      {'background-color': 'color-mix(in srgb, var(--warning-color) 8%, var(--card-background-color))'}
-                    ],
-                    'grid': [
-                      {'grid-template-areas': '"i n l"'},
-                      {'grid-template-columns': '20px max-content 1fr'},
-                      {'column-gap': '10px'},
-                      {'align-items': 'center'}
-                    ],
-                    'icon': [
-                      {'width': '18px'},
-                      {'color': 'var(--warning-color)'}
-                    ],
-                    'name': [
-                      {'justify-self': 'start'},
-                      {'font-size': '12px'},
-                      {'font-weight': '700'},
-                      {'line-height': '1.2'}
-                    ],
-                    'label': [
-                      {'justify-self': 'end'},
-                      {'font-size': '11px'},
-                      {'font-weight': '600'},
-                      {'color': 'var(--secondary-text-color)'},
-                      {'text-align': 'right'}
-                    ]
-                  }
-                } }},
-                {%- endif -%}
-                {#-- ===== RESCHEDULE CHORES ===== --#}
-                {%- if has_selected_user -%}
-                  {%- set reschedule_date_helper = selected_dashboard_helpers.get('date_helper_eid') if selected_dashboard_helpers is mapping else '' -%}
-                  {%- set has_reschedule_date_helper = reschedule_date_helper not in ['', None, 'None'] -%}
-                  {%- set reschedule_date_display = (
-                    ui.get('reschedule_push_label', 'err-reschedule_push_label') ~ " " ~ (as_timestamp(states(reschedule_date_helper)) | timestamp_custom('%a, %b %d, %Y %I:%M %p', true))
-                  ) if has_reschedule_date_helper and states(reschedule_date_helper) not in ['unknown', 'unavailable'] else ui.get('no_date_set', 'err-no_date_set') -%}
-                  {%- set after_datetime = states(reschedule_date_helper) if has_reschedule_date_helper and states(reschedule_date_helper) not in ['unknown', 'unavailable', 'none', ''] else '' -%}
-                  {%- set has_after_datetime = after_datetime != '' -%}
-                  {{ {
-                    'type': 'custom:button-card',
-                    'entity': reschedule_date_helper if has_reschedule_date_helper else selected_dashboard_helper,
-                    'show_name': True,
-                    'show_label': True,
-                    'show_state': False,
-                    'show_icon': True,
-                    'icon': 'mdi:calendar-sync',
-                    'name': ui.get('reschedule_chores', 'err-reschedule_chores'),
-                    'label': reschedule_date_display,
-                    'tap_action': {'action': 'none'},
-                    'hold_action': {'action': 'more-info'} if has_reschedule_date_helper else {'action': 'none'},
-                    'custom_fields': {
-                      'pick': {
-                        'card': {
-                          'type': 'custom:button-card',
-                          'entity': reschedule_date_helper if has_reschedule_date_helper else selected_dashboard_helper,
-                          'icon': 'mdi:calendar-search',
-                          'show_name': False,
-                          'show_icon': True,
-                          'tap_action': {'action': 'more-info'} if has_reschedule_date_helper else {'action': 'none'},
-                          'styles': {
-                            'card': [
-                              {'width': '34px'},
-                              {'height': '34px'},
-                              {'border-radius': '10px'},
-                              {'box-shadow': 'none'},
-                              {'border': '1px solid color-mix(in srgb, var(--primary-color) 18%, var(--divider-color))'},
-                              {'background-color': 'color-mix(in srgb, var(--primary-color) 10%, var(--card-background-color))'}
-                            ],
-                            'icon': [
-                              {'width': '18px'},
-                              {'color': 'var(--primary-color)'}
-                            ]
-                          }
-                        }
-                      },
-                      'indep': {
-                        'card': {
-                          'type': 'custom:button-card',
-                          'show_name': True,
-                          'show_state': False,
-                          'show_icon': True,
-                          'icon': 'mdi:calendar-sync-outline',
-                          'name': ui.get('reschedule_independent', 'err-reschedule_independent'),
-                          'tap_action': ({
-                            'action': 'call-service',
-                            'service': 'choreops.reschedule_chores_after',
-                            'data': {
-                              'config_entry_id': integration_entry_id,
-                              'user_names': [selected_user_name],
-                              'after': after_datetime
-                            }
-                          }) if has_after_datetime else {'action': 'none'},
-                          'styles': {
-                            'card': [
-                              {'padding': '6px 2px'},
-                              {'border-radius': '12px'},
-                              {'box-shadow': 'none'},
-                              {'border': '1px solid color-mix(in srgb, var(--primary-color) 18%, var(--divider-color))'},
-                              {'background-color': 'color-mix(in srgb, var(--primary-color) 8%, var(--card-background-color))'}
-                            ],
-                            'grid': [
-                              {'grid-template-areas': '"i" "n"'},
-                              {'grid-template-columns': '1fr'},
-                              {'grid-template-rows': 'min-content min-content'},
-                              {'justify-items': 'center'},
-                              {'row-gap': '4px'}
-                            ],
-                            'icon': [
-                              {'width': '22px'},
-                              {'height': '22px'},
-                              {'color': 'var(--primary-color)'}
-                            ],
-                            'name': [
-                              {'text-align': 'center'},
-                              {'white-space': 'normal'},
-                              {'word-break': 'break-word'},
-                              {'font-size': '11px'},
-                              {'font-weight': '600'},
-                              {'line-height': '1.3'},
-                              {'color': 'var(--primary-text-color)'},
-                              {'padding': '0 2px'}
-                            ]
-                          }
-                        }
-                      },
-                      'all': {
-                        'card': {
-                          'type': 'custom:button-card',
-                          'show_name': True,
-                          'show_state': False,
-                          'show_icon': True,
-                          'icon': 'mdi:calendar-refresh',
-                          'name': ui.get('reschedule_all_incl_shared', 'err-reschedule_all_incl_shared'),
-                          'tap_action': ({
-                            'action': 'call-service',
-                            'service': 'choreops.reschedule_chores_after',
-                            'data': {
-                              'config_entry_id': integration_entry_id,
-                              'user_names': [selected_user_name],
-                              'after': after_datetime,
-                              'reschedule_shared': true
-                            }
-                          }) if has_after_datetime else {'action': 'none'},
-                          'styles': {
-                            'card': [
-                              {'padding': '6px 2px'},
-                              {'border-radius': '12px'},
-                              {'box-shadow': 'none'},
-                              {'border': '1px solid color-mix(in srgb, var(--primary-color) 18%, var(--divider-color))'},
-                              {'background-color': 'color-mix(in srgb, var(--primary-color) 8%, var(--card-background-color))'}
-                            ],
-                            'grid': [
-                              {'grid-template-areas': '"i" "n"'},
-                              {'grid-template-columns': '1fr'},
-                              {'grid-template-rows': 'min-content min-content'},
-                              {'justify-items': 'center'},
-                              {'row-gap': '4px'}
-                            ],
-                            'icon': [
-                              {'width': '22px'},
-                              {'height': '22px'},
-                              {'color': 'var(--primary-color)'}
-                            ],
-                            'name': [
-                              {'text-align': 'center'},
-                              {'white-space': 'normal'},
-                              {'word-break': 'break-word'},
-                              {'font-size': '11px'},
-                              {'font-weight': '600'},
-                              {'line-height': '1.3'},
-                              {'color': 'var(--primary-text-color)'},
-                              {'padding': '0 2px'}
-                            ]
-                          }
-                        }
-                      }
-                    },
-                    'styles': {
-                      'card': [
-                        {'padding': '12px 14px'},
-                        {'margin-top': '0px'},
-                        {'border-radius': '14px'},
-                        {'box-shadow': 'none'},
-                        {'margin-bottom': '0px'},
-                        {'border': '1px solid var(--divider-color)'},
-                        {'background-color': 'var(--card-background-color)'}
-                      ],
-                      'grid': [
-                        {'grid-template-areas': '"i n . pick" "i l . pick" ". indep all ."'},
-                        {'grid-template-columns': '26px 1fr 1fr 34px'},
-                        {'grid-template-rows': 'min-content min-content auto'},
-                        {'column-gap': '10px'},
-                        {'row-gap': '8px'},
-                        {'align-items': 'center'}
-                      ],
-                      'icon': [
-                        {'width': '20px'},
-                        {'height': '20px'},
-                        {'color': 'var(--primary-color)'}
-                      ],
-                      'name': [
-                        {'justify-self': 'start'},
-                        {'font-size': '13px'},
-                        {'font-weight': '700'},
-                        {'line-height': '1.2'}
-                      ],
-                      'label': [
-                        {'justify-self': 'start'},
-                        {'text-align': 'left'},
-                        {'font-size': '12px'},
-                        {'line-height': '1.35'},
-                        {'color': 'var(--secondary-text-color)'},
-                        {'white-space': 'normal'}
-                      ],
-                      'custom_fields': {
-                        'pick': [
-                          {'justify-self': 'end'},
-                          {'align-self': 'center'}
-                        ],
-                        'indep': [
-                          {'justify-self': 'stretch'},
-                          {'align-self': 'stretch'}
-                        ],
-                        'all': [
-                          {'justify-self': 'stretch'},
-                          {'align-self': 'stretch'}
-                        ]
-                      }
-                    }
-                  } }},
-                {%- endif -%}
               {%- endif -%}
 
         - type: custom:auto-entities
@@ -1259,6 +1002,7 @@ views:
                 {%- set helper_chore_items = helper_chore_items_ns.items -%}
                 {%- set overdue_chore_items = helper_chore_items | selectattr('state', 'eq', 'overdue') | list if has_selected_dashboard_helper else [] -%}
                 {%- set overdue_chore_count = overdue_chore_items | count -%}
+                {%- set show_reset_all_overdue_card = has_selected_user and overdue_chore_count > 0 and integration_entry_id not in ['', None, 'None'] -%}
                 {%- set selected_chore_lookup_name = selected_chore_core_name | string | trim if has_selected_chore else '' -%}
                 {%- set selected_chore_sensor_ns = namespace(entity_id='') -%}
                 {%- if has_selected_chore -%}
@@ -1274,12 +1018,9 @@ views:
                 {%- set has_resolved_selected_chore = has_selected_chore and has_selected_chore_sensor -%}
                 {%- set header_collapsed = selected_user_ui_root.current['header-collapse'] if has_header_collapsed_override else pref_chore_management_default_header_collapsed -%}
                 {%- set header_collapsed = (header_collapsed | string | lower) == 'true' -%}
-                {%- set management_label = ui.get('viewing_selected_chore', 'err-viewing_selected_chore') if has_selected_chore else ui.get('choose_chore_for_admin_actions', 'err-choose_chore_for_admin_actions') if has_chore_selector else ui.get('chore_selector_unavailable', 'err-chore_selector_unavailable') if has_selected_dashboard_helper else ui.get('select_user_to_manage_chores_first', 'err-select_user_to_manage_chores_first') -%}
                 {%- set management_label_html = (
-                  "<span style='color:var(--secondary-text-color);'>" ~ management_label ~ ":</span> <span style='font-weight:700;color:var(--primary-text-color);'>" ~ (selected_user_name | e) ~ "</span>"
-                  if has_selected_user
-                  else management_label
-                ) -%}
+                  "<span style='color:var(--secondary-text-color);'>" ~ ui.get('manage_for', 'Manage for') ~ ":</span> <span style='font-weight:700;color:var(--primary-text-color);'>" ~ (selected_user_name | e) ~ "</span>"
+                ) if has_selected_user else '' -%}
                 {#-- 5. Build Display --#}
 
                 {%- set management_summary_card = {
@@ -1291,7 +1032,7 @@ views:
                   'show_icon': True,
                   'icon': 'mdi:clipboard-search-outline',
                   'name': ui.get('chores', 'err-chores'),
-                  'label': management_label,
+                  'label': '',
                   'tap_action': ({
                     'action': 'call-service',
                     'service': 'choreops.manage_ui_control',
@@ -1319,7 +1060,6 @@ views:
                   'hold_action': {'action': 'more-info'} if chore_select_entity not in ['', None, 'None'] else {'action': 'none'},
                   'custom_fields': {
                     'subtitle': management_label_html,
-                    'target': ("<div style='display:flex;flex-direction:column;align-items:flex-end;justify-content:center;line-height:1;max-width:240px;overflow:hidden;'><span style='display:block;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:16px;font-weight:700;color:var(--primary-text-color);'>" ~ selected_chore_display ~ "</span><span style='display:block;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-top:4px;font-size:10px;text-transform:uppercase;letter-spacing:0.06em;color:var(--primary-color);'>" ~ ui.get('active', 'err-active') ~ "</span></div>") if has_selected_chore else '',
                     'toggle': "<ha-icon icon='" ~ ('mdi:chevron-down' if header_collapsed else 'mdi:chevron-up') ~ "' style='width:18px;height:18px;color: var(--primary-color);'></ha-icon>"
                   },
                   'styles': {
@@ -1327,13 +1067,13 @@ views:
                       {'padding': '8px 16px'},
                       {'border-radius': '16px'},
                       {'box-shadow': 'none'},
-                      {'border': 'none' if has_selected_chore and not header_collapsed else ('1px solid color-mix(in srgb, var(--primary-color) ' ~ pref_chore_management_primary_tint_mix_pct|string ~ '%, var(--divider-color))') if header_collapsed and pref_chore_management_show_header_thin_border else 'none' if header_collapsed else '1px solid var(--divider-color)'},
-                      {'background-color': 'transparent' if has_selected_chore and not header_collapsed else ('color-mix(in srgb, var(--primary-color) ' ~ pref_chore_management_primary_tint_mix_pct|string ~ '%, var(--card-background-color))') if header_collapsed and pref_chore_management_show_header_background else 'transparent'},
-                      {'margin-top': '12px' if header_collapsed else '20px'}
+                      {'border': ('1px solid color-mix(in srgb, var(--primary-color) ' ~ pref_chore_management_primary_tint_mix_pct|string ~ '%, var(--divider-color))') if header_collapsed and pref_chore_management_show_header_thin_border else 'none' if header_collapsed else ('1px solid color-mix(in srgb, var(--primary-color) ' ~ pref_chore_management_primary_tint_mix_pct|string ~ '%, var(--divider-color))') if pref_chore_management_show_header_thin_border else 'none'},
+                      {'background-color': ('color-mix(in srgb, var(--primary-color) ' ~ pref_chore_management_primary_tint_mix_pct|string ~ '%, var(--card-background-color))') if header_collapsed and pref_chore_management_show_header_background else 'transparent'},
+                      {'margin-top': '12px'}
                     ],
                     'grid': [
-                      {'grid-template-areas': '"i n target toggle" "i subtitle target toggle"' if has_selected_chore else '"i n toggle" "i subtitle toggle"'},
-                      {'grid-template-columns': '32px minmax(150px, 1fr) minmax(0, auto) min-content' if has_selected_chore else '32px minmax(0, 1fr) min-content'},
+                      {'grid-template-areas': '"i n toggle" "i subtitle toggle"'},
+                      {'grid-template-columns': '32px minmax(0, 1fr) min-content'},
                       {'grid-template-rows': 'min-content min-content'},
                       {'column-gap': '14px'},
                       {'row-gap': '2px'},
@@ -1374,14 +1114,6 @@ views:
                         {'line-height': '1.35'},
                         {'color': 'var(--secondary-text-color)'},
                         {'white-space': 'normal'}
-                      ],
-                      'target': [
-                        {'justify-self': 'end'},
-                        {'align-self': 'center'},
-                        {'min-width': '0'},
-                        {'max-width': '240px'},
-                        {'text-align': 'right'},
-                        {'display': 'block' if has_selected_chore else 'none'}
                       ],
                       'toggle': [
                         {'justify-self': 'end'},
@@ -1494,15 +1226,52 @@ views:
                   'content': "⚠️ **Dashboard configuration error**\n\nThe selected chore could not be resolved for this per-user admin view.\n\nClear the chore selection and choose it again. If the problem persists, reopen the profile from the Management section and verify the ChoreOps chore helper entities are available for that user."
                 } -%}
                 {%- set chore_select_card = {
-                  'type': 'entities',
-                  'show_header_toggle': false,
-                  'state_color': false,
-                  'entities': [
-                    {
-                      'entity': chore_select_entity,
-                      'name': ui.get('select_chore_to_manage', 'err-select_chore_to_manage')
-                    }
-                  ]
+                  'type': 'custom:button-card',
+                  'entity': chore_select_entity if chore_select_entity not in ['', None, 'None'] else selected_dashboard_helper,
+                  'show_name': True,
+                  'show_label': True,
+                  'show_state': False,
+                  'show_icon': True,
+                  'icon': 'mdi:clipboard-text-search-outline',
+                  'name': selected_chore_display if has_selected_chore else ui.get('select_chore_to_manage', 'err-select_chore_to_manage'),
+                  'label': (ui.get('assign_to_user', 'err-assign_to_user') ~ ' ' ~ (selected_user_name | e)) if selected_chore_is_unassigned else (ui.get('remove_from_user', 'err-remove_from_user') ~ ' ' ~ (selected_user_name | e)) if has_selected_chore else ui.get('choose_chore_for_admin_actions', 'err-choose_chore_for_admin_actions'),
+                  'tap_action': {'action': 'more-info'} if chore_select_entity not in ['', None, 'None'] else {'action': 'none'},
+                  'styles': {
+                    'card': [
+                      {'padding': '12px 14px'},
+                      {'border-radius': '16px'},
+                      {'box-shadow': 'none'},
+                      {'border': '1px solid var(--divider-color)'},
+                      {'background-color': 'var(--card-background-color)'}
+                    ],
+                    'grid': [
+                      {'grid-template-areas': '"i n" "i l"'},
+                      {'grid-template-columns': '26px minmax(0, 1fr)'},
+                      {'grid-template-rows': 'min-content min-content'},
+                      {'column-gap': '10px'},
+                      {'row-gap': '3px'},
+                      {'align-items': 'center'}
+                    ],
+                    'icon': [
+                      {'width': '20px'},
+                      {'height': '20px'},
+                      {'color': 'var(--primary-color)'}
+                    ],
+                    'name': [
+                      {'justify-self': 'start'},
+                      {'font-size': '14px'},
+                      {'font-weight': '700'},
+                      {'line-height': '1.2'}
+                    ],
+                    'label': [
+                      {'justify-self': 'start'},
+                      {'text-align': 'left'},
+                      {'font-size': '12px'},
+                      {'line-height': '1.25'},
+                      {'color': 'var(--secondary-text-color)'},
+                      {'white-space': 'normal'}
+                    ]
+                  }
                 } if has_chore_selector else none -%}
                 {%- set chore_assignment_assign_card = {
                   'type': 'custom:button-card',
@@ -2418,12 +2187,11 @@ views:
                     'tap_action': {'action': 'more-info'},
                     'styles': {
                       'card': [
-                        {'padding': '14px 16px'},
-                        {'border-radius': '16px'},
+                        {'padding': '0'},
+                        {'border-radius': '0'},
                         {'box-shadow': 'none'},
-                        {'border': '1px solid color-mix(in srgb, ' ~ current_status_color ~ ' 20%, var(--divider-color))'},
-                        {'border-left': '4px solid ' ~ current_status_color},
-                        {'background-color': 'color-mix(in srgb, var(--secondary-background-color) 72%, var(--card-background-color))'}
+                        {'border': 'none'},
+                        {'background': 'transparent'}
                       ],
                       'grid': [
                         {'grid-template-areas': '"i n status" "i l status" "details details details" "rotation rotation rotation" "actions actions actions" "rules rules rules" "stats stats stats"' if has_action_cards else '"i n status" "i l status" "details details details" "rotation rotation rotation" "rules rules rules" "stats stats stats"'},
@@ -2504,16 +2272,577 @@ views:
 
               {%- if has_selected_dashboard_helper -%}
                 {{ management_summary_card }},
+                {#-- ===== ALL CHORES ACTIONS ===== --#}
+                {%- if not header_collapsed and has_selected_user -%}
+                  {%- if show_reset_all_overdue_card -%}
+                  {{ {
+                    'type': 'custom:button-card',
+                    'entity': selected_dashboard_helper,
+                    'show_name': True,
+                    'show_label': True,
+                    'show_state': False,
+                    'show_icon': True,
+                    'icon': 'mdi:restore-alert',
+                    'name': ui.get('reset_all', 'err-reset_all'),
+                    'label': selected_user_name ~ ' • ' ~ overdue_chore_count ~ ' ' ~ ui.get('overdue_chores', 'err-overdue_chores'),
+                    'tap_action': {
+                      'action': 'call-service',
+                      'service': 'choreops.reset_overdue_chores',
+                      'data': {
+                        'config_entry_id': integration_entry_id,
+                        'user_name': selected_user_name
+                      }
+                    },
+                    'hold_action': {'action': 'more-info'},
+                    'styles': {
+                      'card': [
+                        {'padding': '10px 14px'},
+                        {'margin-top': '0px'},
+                        {'border-radius': '14px'},
+                        {'box-shadow': 'none'},
+                        {'border': '1px solid color-mix(in srgb, var(--warning-color) 18%, var(--divider-color))'},
+                        {'background-color': 'color-mix(in srgb, var(--warning-color) 8%, var(--card-background-color))'}
+                      ],
+                      'grid': [
+                        {'grid-template-areas': '"i n l"'},
+                        {'grid-template-columns': '20px max-content 1fr'},
+                        {'column-gap': '10px'},
+                        {'align-items': 'center'}
+                      ],
+                      'icon': [
+                        {'width': '18px'},
+                        {'color': 'var(--warning-color)'}
+                      ],
+                      'name': [
+                        {'justify-self': 'start'},
+                        {'font-size': '12px'},
+                        {'font-weight': '700'},
+                        {'line-height': '1.2'}
+                      ],
+                      'label': [
+                        {'justify-self': 'end'},
+                        {'font-size': '11px'},
+                        {'font-weight': '600'},
+                        {'color': 'var(--secondary-text-color)'},
+                        {'text-align': 'right'}
+                      ]
+                    }
+                  } }},
+                  {%- endif -%}
+                  {%- set has_reschedule_date_helper = dashboard_date_helper not in ['', None, 'None'] -%}
+                  {%- set reschedule_date_display = (
+                    ui.get('reschedule_push_label', 'err-reschedule_push_label') ~ " " ~ (as_timestamp(states(dashboard_date_helper)) | timestamp_custom('%a, %b %d, %Y %I:%M %p', true))
+                  ) if has_reschedule_date_helper and states(dashboard_date_helper) not in ['unknown', 'unavailable'] else ui.get('no_date_set', 'err-no_date_set') -%}
+                  {%- set after_datetime = states(dashboard_date_helper) if has_reschedule_date_helper and states(dashboard_date_helper) not in ['unknown', 'unavailable', 'none', ''] else '' -%}
+                  {%- set has_after_datetime = after_datetime != '' -%}
+                  {{ {
+                    'type': 'custom:button-card',
+                    'entity': dashboard_date_helper if has_reschedule_date_helper else selected_dashboard_helper,
+                    'show_name': True,
+                    'show_label': True,
+                    'show_state': False,
+                    'show_icon': True,
+                    'icon': 'mdi:calendar-sync',
+                    'name': ui.get('reschedule_chores', 'err-reschedule_chores'),
+                    'label': reschedule_date_display,
+                    'tap_action': {'action': 'none'},
+                    'hold_action': {'action': 'more-info'} if has_reschedule_date_helper else {'action': 'none'},
+                    'custom_fields': {
+                      'pick': {
+                        'card': {
+                          'type': 'custom:button-card',
+                          'entity': dashboard_date_helper if has_reschedule_date_helper else selected_dashboard_helper,
+                          'icon': 'mdi:calendar-search',
+                          'show_name': False,
+                          'show_icon': True,
+                          'tap_action': {'action': 'more-info'} if has_reschedule_date_helper else {'action': 'none'},
+                          'styles': {
+                            'card': [
+                              {'width': '34px'},
+                              {'height': '34px'},
+                              {'border-radius': '10px'},
+                              {'box-shadow': 'none'},
+                              {'border': '1px solid color-mix(in srgb, var(--primary-color) 18%, var(--divider-color))'},
+                              {'background-color': 'color-mix(in srgb, var(--primary-color) 10%, var(--card-background-color))'}
+                            ],
+                            'icon': [
+                              {'width': '18px'},
+                              {'color': 'var(--primary-color)'}
+                            ]
+                          }
+                        }
+                      },
+                      'indep': {
+                        'card': {
+                          'type': 'custom:button-card',
+                          'show_name': True,
+                          'show_state': False,
+                          'show_icon': True,
+                          'icon': 'mdi:calendar-sync-outline',
+                          'name': ui.get('reschedule_independent', 'err-reschedule_independent'),
+                          'tap_action': ({
+                            'action': 'call-service',
+                            'service': 'choreops.reschedule_chores_after',
+                            'data': {
+                              'config_entry_id': integration_entry_id,
+                              'user_names': [selected_user_name],
+                              'after': after_datetime
+                            }
+                          }) if has_after_datetime else {'action': 'none'},
+                          'styles': {
+                            'card': [
+                              {'padding': '6px 2px'},
+                              {'border-radius': '12px'},
+                              {'box-shadow': 'none'},
+                              {'border': '1px solid color-mix(in srgb, var(--primary-color) 18%, var(--divider-color))'},
+                              {'background-color': 'color-mix(in srgb, var(--primary-color) 8%, var(--card-background-color))'}
+                            ],
+                            'grid': [
+                              {'grid-template-areas': '"i" "n"'},
+                              {'grid-template-columns': '1fr'},
+                              {'grid-template-rows': 'min-content min-content'},
+                              {'justify-items': 'center'},
+                              {'row-gap': '4px'}
+                            ],
+                            'icon': [
+                              {'width': '22px'},
+                              {'height': '22px'},
+                              {'color': 'var(--primary-color)'}
+                            ],
+                            'name': [
+                              {'text-align': 'center'},
+                              {'white-space': 'normal'},
+                              {'word-break': 'break-word'},
+                              {'font-size': '11px'},
+                              {'font-weight': '600'},
+                              {'line-height': '1.3'},
+                              {'color': 'var(--primary-text-color)'},
+                              {'padding': '0 2px'}
+                            ]
+                          }
+                        }
+                      },
+                      'all': {
+                        'card': {
+                          'type': 'custom:button-card',
+                          'show_name': True,
+                          'show_state': False,
+                          'show_icon': True,
+                          'icon': 'mdi:calendar-refresh',
+                          'name': ui.get('reschedule_all_incl_shared', 'err-reschedule_all_incl_shared'),
+                          'tap_action': ({
+                            'action': 'call-service',
+                            'service': 'choreops.reschedule_chores_after',
+                            'data': {
+                              'config_entry_id': integration_entry_id,
+                              'user_names': [selected_user_name],
+                              'after': after_datetime,
+                              'reschedule_shared': true
+                            }
+                          }) if has_after_datetime else {'action': 'none'},
+                          'styles': {
+                            'card': [
+                              {'padding': '6px 2px'},
+                              {'border-radius': '12px'},
+                              {'box-shadow': 'none'},
+                              {'border': '1px solid color-mix(in srgb, var(--primary-color) 18%, var(--divider-color))'},
+                              {'background-color': 'color-mix(in srgb, var(--primary-color) 8%, var(--card-background-color))'}
+                            ],
+                            'grid': [
+                              {'grid-template-areas': '"i" "n"'},
+                              {'grid-template-columns': '1fr'},
+                              {'grid-template-rows': 'min-content min-content'},
+                              {'justify-items': 'center'},
+                              {'row-gap': '4px'}
+                            ],
+                            'icon': [
+                              {'width': '22px'},
+                              {'height': '22px'},
+                              {'color': 'var(--primary-color)'}
+                            ],
+                            'name': [
+                              {'text-align': 'center'},
+                              {'white-space': 'normal'},
+                              {'word-break': 'break-word'},
+                              {'font-size': '11px'},
+                              {'font-weight': '600'},
+                              {'line-height': '1.3'},
+                              {'color': 'var(--primary-text-color)'},
+                              {'padding': '0 2px'}
+                            ]
+                          }
+                        }
+                      }
+                    },
+                    'styles': {
+                      'card': [
+                        {'padding': '12px 14px'},
+                        {'margin-top': '0px'},
+                        {'border-radius': '14px'},
+                        {'box-shadow': 'none'},
+                        {'margin-bottom': '0px'},
+                        {'border': '1px solid var(--divider-color)'},
+                        {'background-color': 'var(--card-background-color)'}
+                      ],
+                      'grid': [
+                        {'grid-template-areas': '"i n . pick" "i l . pick" ". indep all ."'},
+                        {'grid-template-columns': '26px 1fr 1fr 34px'},
+                        {'grid-template-rows': 'min-content min-content auto'},
+                        {'column-gap': '10px'},
+                        {'row-gap': '8px'},
+                        {'align-items': 'center'}
+                      ],
+                      'icon': [
+                        {'width': '20px'},
+                        {'height': '20px'},
+                        {'color': 'var(--primary-color)'}
+                      ],
+                      'name': [
+                        {'justify-self': 'start'},
+                        {'font-size': '13px'},
+                        {'font-weight': '700'},
+                        {'line-height': '1.2'}
+                      ],
+                      'label': [
+                        {'justify-self': 'start'},
+                        {'text-align': 'left'},
+                        {'font-size': '12px'},
+                        {'line-height': '1.35'},
+                        {'color': 'var(--secondary-text-color)'},
+                        {'white-space': 'normal'}
+                      ],
+                      'custom_fields': {
+                        'pick': [
+                          {'justify-self': 'end'},
+                          {'align-self': 'center'}
+                        ],
+                        'indep': [
+                          {'justify-self': 'stretch'},
+                          {'align-self': 'stretch'}
+                        ],
+                        'all': [
+                          {'justify-self': 'stretch'},
+                          {'align-self': 'stretch'}
+                        ]
+                      }
+                    }
+                  } }},
+                  {#-- ===== PER-CHORE CONTROLS ===== --#}
+                {%- endif -%}
                 {%- if not header_collapsed -%}
-                  {%- if has_chore_selector and chore_select_card not in [none, None] -%}
-                    {{ chore_select_card }},
-                    {%- if has_selected_chore and chore_assignment_card not in [none, None] -%}
-                      {{ chore_assignment_card }},
-                    {%- endif -%}
-                    {%- if has_resolved_selected_chore and chore_overview_card not in [none, None] -%}
-                      {{ chore_overview_card }},
-                    {%- elif has_selected_chore and not selected_chore_is_unassigned -%}
-                      {{ selected_chore_resolution_error_card }},
+                  {%- if has_chore_selector -%}
+                    {%- if has_selected_chore -%}
+                      {%- if has_resolved_selected_chore and chore_overview_card not in [none, None] -%}
+                    {{
+                      {
+                        'type': 'custom:button-card',
+                        'entity': chore_select_entity,
+                        'show_name': True,
+                        'show_icon': True,
+                        'show_label': False,
+                        'show_state': False,
+                        'icon': 'mdi:clipboard-search-outline',
+                        'name': ui.get('select_chore_to_manage', 'err-select_chore_to_manage'),
+                        'tap_action': {'action': 'more-info'},
+                        'custom_fields': {
+                          'action': {
+                            'card': {
+                              'type': 'custom:button-card',
+                              'entity': selected_chore_sensor,
+                              'icon': 'mdi:account-plus-outline' if selected_chore_is_unassigned else 'mdi:account-minus-outline',
+                              'show_name': True,
+                              'show_label': False,
+                              'show_state': False,
+                              'show_icon': True,
+                              'name': (ui.get('assign_to_user', 'err-assign_to_user') if selected_chore_is_unassigned else ui.get('remove_from_user', 'err-remove_from_user')),
+                              'tap_action': {
+                                'action': 'call-service',
+                                'service': 'choreops.update_chore',
+                                'data': {
+                                  'config_entry_id': integration_entry_id,
+                                  'name': selected_chore_core_name,
+                                  'assigned_user_names': [selected_user_name],
+                                  'assignment_action': 'add' if selected_chore_is_unassigned else 'remove'
+                                }
+                              },
+                              'styles': {
+                                'card': [
+                                  {'padding': '6px 12px'},
+                                  {'border-radius': '10px'},
+                                  {'box-shadow': 'none'},
+                                  {'min-width': '90px'},
+                                  {'border': '1px solid color-mix(in srgb, var(--success-color) 18%, var(--divider-color))' if selected_chore_is_unassigned else '1px solid color-mix(in srgb, var(--error-color) 18%, var(--divider-color))'},
+                                  {'background-color': 'color-mix(in srgb, var(--success-color) 10%, var(--card-background-color))' if selected_chore_is_unassigned else 'color-mix(in srgb, var(--error-color) 10%, var(--card-background-color))'}
+                                ],
+                                'grid': [
+                                  {'grid-template-areas': '"i n"'},
+                                  {'grid-template-columns': 'min-content min-content'},
+                                  {'grid-template-rows': 'min-content'},
+                                  {'column-gap': '6px'},
+                                  {'align-items': 'center'}
+                                ],
+                                'icon': [
+                                  {'width': '16px'},
+                                  {'margin-top': '-2px'},
+                                  {'color': 'var(--success-color)' if selected_chore_is_unassigned else 'var(--error-color)'}
+                                ],
+                                'name': [
+                                  {'font-size': '11px'},
+                                  {'font-weight': '600'},
+                                  {'line-height': '1.2'},
+                                  {'white-space': 'nowrap'},
+                                  {'color': 'var(--primary-text-color)'}
+                                ]
+                              }
+                            }
+                          },
+                          'entity_select': {
+                            'card': {
+                              'type': 'entities',
+                              'entities': [
+                                {
+                                  'entity': chore_select_entity,
+                                  'name': ' '
+                                }
+                              ],
+                              'state_color': False,
+                              'show_header_toggle': False
+                            }
+                          },
+                          'overview': {
+                            'card': chore_overview_card
+                          }
+                        },
+                        'styles': {
+                          'card': [
+                            {'padding': '14px 16px'},
+                            {'border-radius': '16px'},
+                            {'box-shadow': 'none'},
+                            {'border': ('1px solid color-mix(in srgb, ' ~ current_status_color ~ ' 20%, var(--divider-color))')},
+                            {'border-left': ('4px solid ' ~ current_status_color)},
+                            {'background-color': ('color-mix(in srgb, var(--secondary-background-color) 72%, var(--card-background-color))')}
+                          ],
+                          'grid': [
+                            {'grid-template-areas': '"i n action" "entity_select entity_select entity_select" "overview overview overview"'},
+                            {'grid-template-columns': '26px minmax(0, 1fr) min-content'},
+                            {'grid-template-rows': 'min-content min-content min-content'},
+                            {'column-gap': '10px'},
+                            {'row-gap': '3px'},
+                            {'align-items': 'center'}
+                          ],
+                          'icon': [
+                            {'width': '20px'},
+                            {'height': '20px'},
+                            {'color': 'var(--primary-color)'}
+                          ],
+                          'name': [
+                            {'justify-self': 'start'},
+                            {'font-size': '14px'},
+                            {'font-weight': '700'},
+                            {'line-height': '1.2'}
+                          ],
+                          'custom_fields': {
+                            'action': [
+                              {'justify-self': 'end'},
+                              {'align-self': 'center'}
+                            ],
+                            'entity_select': [
+                              {'width': '100%'},
+                              {'padding-top': '8px'},
+                              {'padding-bottom': '4px'}
+                            ],
+                            'overview': [
+                              {'grid-column': '1 / -1'},
+                              {'width': '100%'}
+                            ]
+                          }
+                        }
+                      }
+                    }},
+                      {%- else -%}
+                    {{
+                      {
+                        'type': 'custom:button-card',
+                        'entity': chore_select_entity,
+                        'show_name': True,
+                        'show_icon': True,
+                        'show_label': False,
+                        'show_state': False,
+                        'icon': 'mdi:clipboard-search-outline',
+                        'name': ui.get('select_chore_to_manage', 'err-select_chore_to_manage'),
+                        'tap_action': {'action': 'more-info'},
+                        'custom_fields': {
+                          'action': {
+                            'card': {
+                              'type': 'custom:button-card',
+                              'entity': selected_chore_sensor,
+                              'icon': 'mdi:account-plus-outline' if selected_chore_is_unassigned else 'mdi:account-minus-outline',
+                              'show_name': True,
+                              'show_label': False,
+                              'show_state': False,
+                              'show_icon': True,
+                              'name': (ui.get('assign_to_user', 'err-assign_to_user') if selected_chore_is_unassigned else ui.get('remove_from_user', 'err-remove_from_user')),
+                              'tap_action': {
+                                'action': 'call-service',
+                                'service': 'choreops.update_chore',
+                                'data': {
+                                  'config_entry_id': integration_entry_id,
+                                  'name': selected_chore_core_name,
+                                  'assigned_user_names': [selected_user_name],
+                                  'assignment_action': 'add' if selected_chore_is_unassigned else 'remove'
+                                }
+                              },
+                              'styles': {
+                                'card': [
+                                  {'padding': '6px 12px'},
+                                  {'border-radius': '10px'},
+                                  {'box-shadow': 'none'},
+                                  {'min-width': '90px'},
+                                  {'border': '1px solid color-mix(in srgb, var(--success-color) 18%, var(--divider-color))' if selected_chore_is_unassigned else '1px solid color-mix(in srgb, var(--error-color) 18%, var(--divider-color))'},
+                                  {'background-color': 'color-mix(in srgb, var(--success-color) 10%, var(--card-background-color))' if selected_chore_is_unassigned else 'color-mix(in srgb, var(--error-color) 10%, var(--card-background-color))'}
+                                ],
+                                'grid': [
+                                  {'grid-template-areas': '"i n"'},
+                                  {'grid-template-columns': 'min-content min-content'},
+                                  {'grid-template-rows': 'min-content'},
+                                  {'column-gap': '6px'},
+                                  {'align-items': 'center'}
+                                ],
+                                'icon': [
+                                  {'width': '16px'},
+                                  {'margin-top': '-2px'},
+                                  {'color': 'var(--success-color)' if selected_chore_is_unassigned else 'var(--error-color)'}
+                                ],
+                                'name': [
+                                  {'font-size': '11px'},
+                                  {'font-weight': '600'},
+                                  {'line-height': '1.2'},
+                                  {'white-space': 'nowrap'},
+                                  {'color': 'var(--primary-text-color)'}
+                                ]
+                              }
+                            }
+                          },
+                          'entity_select': {
+                            'card': {
+                              'type': 'entities',
+                              'entities': [
+                                {
+                                  'entity': chore_select_entity,
+                                  'name': ' '
+                                }
+                              ],
+                              'state_color': False,
+                              'show_header_toggle': False
+                            }
+                          }
+                        },
+                        'styles': {
+                          'card': [
+                            {'padding': '14px 16px'},
+                            {'border-radius': '16px'},
+                            {'box-shadow': 'none'},
+                            {'border': '1px solid var(--divider-color)'},
+                            {'background-color': 'var(--card-background-color)'}
+                          ],
+                          'grid': [
+                            {'grid-template-areas': '"i n action" "entity_select entity_select entity_select"'},
+                            {'grid-template-columns': '26px minmax(0, 1fr) min-content'},
+                            {'grid-template-rows': 'min-content min-content'},
+                            {'column-gap': '10px'},
+                            {'row-gap': '3px'},
+                            {'align-items': 'center'}
+                          ],
+                          'icon': [
+                            {'width': '20px'},
+                            {'height': '20px'},
+                            {'color': 'var(--primary-color)'}
+                          ],
+                          'name': [
+                            {'justify-self': 'start'},
+                            {'font-size': '14px'},
+                            {'font-weight': '700'},
+                            {'line-height': '1.2'}
+                          ],
+                          'custom_fields': {
+                            'action': [
+                              {'justify-self': 'end'},
+                              {'align-self': 'center'}
+                            ],
+                            'entity_select': [
+                              {'width': '100%'},
+                              {'padding-top': '8px'},
+                              {'padding-bottom': '4px'}
+                            ]
+                          }
+                        }
+                      }
+                    }},
+                      {%- endif -%}
+                    {%- else -%}
+                    {{
+                      {
+                        'type': 'custom:button-card',
+                        'entity': chore_select_entity,
+                        'show_name': True,
+                        'show_icon': True,
+                        'show_label': False,
+                        'show_state': False,
+                        'icon': 'mdi:clipboard-search-outline',
+                        'name': ui.get('select_chore_to_manage', 'err-select_chore_to_manage'),
+                        'tap_action': {'action': 'more-info'},
+                        'custom_fields': {
+                          'entity_select': {
+                            'card': {
+                              'type': 'entities',
+                              'entities': [
+                                {
+                                  'entity': chore_select_entity,
+                                  'name': ' '
+                                }
+                              ],
+                              'state_color': False,
+                              'show_header_toggle': False
+                            }
+                          }
+                        },
+                        'styles': {
+                          'card': [
+                            {'padding': '14px 16px'},
+                            {'border-radius': '16px'},
+                            {'box-shadow': 'none'},
+                            {'border': '1px solid var(--divider-color)'},
+                            {'background-color': 'var(--card-background-color)'}
+                          ],
+                          'grid': [
+                            {'grid-template-areas': '"i n" "entity_select entity_select"'},
+                            {'grid-template-columns': '26px minmax(0, 1fr)'},
+                            {'grid-template-rows': 'min-content min-content'},
+                            {'column-gap': '10px'},
+                            {'row-gap': '3px'},
+                            {'align-items': 'center'}
+                          ],
+                          'icon': [
+                            {'width': '20px'},
+                            {'height': '20px'},
+                            {'color': 'var(--primary-color)'}
+                          ],
+                          'name': [
+                            {'justify-self': 'start'},
+                            {'font-size': '14px'},
+                            {'font-weight': '700'},
+                            {'line-height': '1.2'}
+                          ],
+                          'custom_fields': {
+                            'entity_select': [
+                              {'width': '100%'},
+                              {'padding-top': '8px'},
+                              {'padding-bottom': '4px'}
+                            ]
+                          }
+                        }
+                      }
+                    }},
                     {%- endif -%}
                   {%- else -%}
                     {{ chore_selector_error_card }},
@@ -3730,9 +4059,9 @@ views:
                       {'padding': '8px 16px'},
                       {'border-radius': '16px'},
                       {'box-shadow': 'none'},
-                      {'border': ('1px solid color-mix(in srgb, var(--primary-color) ' ~ pref_economy_management_primary_tint_mix_pct|string ~ '%, var(--divider-color))') if header_collapsed and pref_economy_management_show_header_thin_border else 'none'},
+                      {'border': ('1px solid color-mix(in srgb, var(--primary-color) ' ~ pref_economy_management_primary_tint_mix_pct|string ~ '%, var(--divider-color))') if header_collapsed and pref_economy_management_show_header_thin_border else 'none' if header_collapsed else ('1px solid color-mix(in srgb, var(--primary-color) ' ~ pref_economy_management_primary_tint_mix_pct|string ~ '%, var(--divider-color))') if pref_economy_management_show_header_thin_border else 'none'},
                       {'background-color': ('color-mix(in srgb, var(--primary-color) ' ~ pref_economy_management_primary_tint_mix_pct|string ~ '%, var(--card-background-color))') if header_collapsed and pref_economy_management_show_header_background else 'transparent'},
-                      {'margin-top': '12px' if header_collapsed else '12px'}
+                      {'margin-top': '2px'}
                     ],
                     'grid': [
                       {'grid-template-areas': '"i n target toggle" "i subtitle target toggle"'},
