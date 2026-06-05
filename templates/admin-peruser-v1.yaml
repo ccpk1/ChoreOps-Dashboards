@@ -1858,8 +1858,19 @@ views:
                   {%- set detail_grid = detail_grid ~ "<div><div style='font-size:10px;text-transform:uppercase;letter-spacing:0.06em;color:var(--secondary-text-color);'>" ~ ui.get('value', 'err-value') ~ "</div><div style='margin-top:2px;font-size:13px;font-weight:600;line-height:1.3;'>" ~ chore_value ~ " " ~ points_label ~ "</div></div>" -%}
                   {%- set detail_grid = detail_grid ~ "<div><div style='font-size:10px;text-transform:uppercase;letter-spacing:0.06em;color:var(--secondary-text-color);'>" ~ ui.get('approval_reset_type', 'err-approval_reset_type') ~ "</div><div style='margin-top:2px;font-size:13px;font-weight:600;line-height:1.3;'>" ~ approval_reset_display ~ "</div></div>" -%}
                   {%- set detail_grid = detail_grid ~ "<div><div style='font-size:10px;text-transform:uppercase;letter-spacing:0.06em;color:var(--secondary-text-color);'>" ~ ui.get('recurrence', 'err-recurrence') ~ "</div><div style='margin-top:2px;font-size:13px;font-weight:600;line-height:1.3;'>" ~ recurrence_display ~ "</div></div>" -%}
-                  {%- set detail_grid = detail_grid ~ "<div></div>" -%}
-                  {%- set detail_grid = detail_grid ~ "<div style='grid-column:1 / -1;text-align:center;'><div style='font-size:10px;text-transform:uppercase;letter-spacing:0.06em;color:var(--secondary-text-color);text-align:center;'>" ~ due_label ~ "</div><div style='margin-top:3px;font-size:14px;font-weight:700;line-height:1.35;color:var(--primary-text-color);text-align:center;'>" ~ due_display ~ "</div></div>" -%}
+                  {%- if is_rotation_type and assigned_users | count > 0 -%}
+                    {%- set assignee_order_ns = namespace(items=[]) -%}
+                    {%- for user_name in assigned_users -%}
+                      {%- set assignee_order_ns.items = assignee_order_ns.items + [loop.index ~ ". " ~ user_name ~ (" 👈" if user_name == turn_user_name else "")] -%}
+                    {%- endfor -%}
+                    {%- set detail_grid = detail_grid ~ "<div style='grid-column:1 / -1;text-align:center;padding-top:2px;border-top:1px solid color-mix(in srgb, var(--divider-color) 78%, transparent);'><div style='font-size:10px;text-transform:uppercase;letter-spacing:0.06em;color:var(--secondary-text-color);text-align:center;'>" ~ ui.get('rotation_order', 'err-rotation_order') ~ "</div><div style='margin-top:3px;font-size:13px;font-weight:600;line-height:1.35;color:var(--primary-text-color);text-align:center;'>" ~ (assignee_order_ns.items | join('  ·  ')) ~ "</div></div>" -%}
+                  {%- elif is_shared_type and assigned_users | count > 0 -%}
+                    {%- set detail_grid = detail_grid ~ "<div style='grid-column:1 / -1;text-align:center;'><div style='font-size:10px;text-transform:uppercase;letter-spacing:0.06em;color:var(--secondary-text-color);text-align:center;'>" ~ ui.get('assigned_to', 'err-assigned_to') ~ "</div><div style='margin-top:3px;font-size:13px;font-weight:600;line-height:1.35;color:var(--primary-text-color);text-align:center;'>" ~ (assigned_users | join(' · ')) ~ "</div></div>" -%}
+                    {%- set detail_grid = detail_grid ~ "<div style='grid-column:1 / -1;text-align:center;'><div style='font-size:10px;text-transform:uppercase;letter-spacing:0.06em;color:var(--secondary-text-color);text-align:center;'>" ~ due_label ~ "</div><div style='margin-top:3px;font-size:14px;font-weight:700;line-height:1.35;color:var(--primary-text-color);text-align:center;'>" ~ due_display ~ "</div></div>" -%}
+                  {%- else -%}
+                    {%- set detail_grid = detail_grid ~ "<div></div>" -%}
+                    {%- set detail_grid = detail_grid ~ "<div style='grid-column:1 / -1;text-align:center;'><div style='font-size:10px;text-transform:uppercase;letter-spacing:0.06em;color:var(--secondary-text-color);text-align:center;'>" ~ due_label ~ "</div><div style='margin-top:3px;font-size:14px;font-weight:700;line-height:1.35;color:var(--primary-text-color);text-align:center;'>" ~ due_display ~ "</div></div>" -%}
+                  {%- endif -%}
                   {%- set detail_grid = detail_grid ~ "</div>" -%}
                   {%- set primary_action_cards = [
                     {
@@ -2250,6 +2261,150 @@ views:
                       else chore_description
                     )
                   ) -%}
+                  {#-- ===== ROTATION CONTROLS ===== --#}
+                  {%- if is_rotation_type and assigned_users | count > 0 -%}
+                    {%- set reordered = [selected_user_name] + (assigned_users | reject('equalto', selected_user_name) | list) -%}
+                    {%- set rotation_action_cards = [
+                      {
+                        'type': 'custom:button-card',
+                        'entity': selected_chore_sensor,
+                        'icon': 'mdi:account-arrow-right-outline',
+                        'name': ui.get('set_turn_to', 'err-set_turn_to') ~ ' ' ~ selected_user_name,
+                        'show_name': true,
+                        'show_icon': true,
+                        'show_label': false,
+                        'show_state': false,
+                        'tap_action': {
+                          'action': 'call-service',
+                          'service': 'choreops.set_rotation_turn',
+                          'data': {
+                            'config_entry_id': integration_entry_id,
+                            'chore_name': selected_chore_display,
+                            'user_name': selected_user_name
+                          }
+                        },
+                        'styles': {
+                          'card': [
+                            {'padding': '6px 8px'},
+                            {'border-radius': '14px'},
+                            {'box-shadow': 'none'},
+                            {'border': '1px solid color-mix(in srgb, var(--primary-color) 18%, var(--divider-color))'},
+                            {'background-color': 'color-mix(in srgb, var(--primary-color) 8%, var(--card-background-color))'}
+                          ],
+                          'grid': [
+                            {'grid-template-areas': '"i" "n"'},
+                            {'grid-template-columns': '1fr'},
+                            {'row-gap': '4px'},
+                            {'align-items': 'center'}
+                          ],
+                          'icon': [
+                            {'width': '18px'},
+                            {'color': 'var(--primary-color)'}
+                          ],
+                          'name': [
+                            {'font-size': '11px'},
+                            {'font-weight': '700'},
+                            {'line-height': '1.2'},
+                            {'white-space': 'normal'},
+                            {'text-align': 'center'}
+                          ]
+                        }
+                      },
+                      {
+                        'type': 'custom:button-card',
+                        'entity': selected_chore_sensor,
+                        'icon': 'mdi:arrow-up-bold-circle-outline',
+                        'name': ui.get('move_to_front', 'err-move_to_front') ~ ' ' ~ selected_user_name,
+                        'show_name': true,
+                        'show_icon': true,
+                        'show_label': false,
+                        'show_state': false,
+                        'tap_action': {
+                          'action': 'call-service',
+                          'service': 'choreops.update_chore',
+                          'data': {
+                            'config_entry_id': integration_entry_id,
+                            'name': selected_chore_display,
+                            'assigned_user_names': reordered,
+                            'assignment_action': 'replace'
+                          }
+                        },
+                        'styles': {
+                          'card': [
+                            {'padding': '6px 8px'},
+                            {'border-radius': '14px'},
+                            {'box-shadow': 'none'},
+                            {'border': '1px solid color-mix(in srgb, var(--primary-color) 18%, var(--divider-color))'},
+                            {'background-color': 'color-mix(in srgb, var(--primary-color) 8%, var(--card-background-color))'}
+                          ],
+                          'grid': [
+                            {'grid-template-areas': '"i" "n"'},
+                            {'grid-template-columns': '1fr'},
+                            {'row-gap': '4px'},
+                            {'align-items': 'center'}
+                          ],
+                          'icon': [
+                            {'width': '18px'},
+                            {'color': 'var(--primary-color)'}
+                          ],
+                          'name': [
+                            {'font-size': '11px'},
+                            {'font-weight': '700'},
+                            {'line-height': '1.2'},
+                            {'white-space': 'normal'},
+                            {'text-align': 'center'}
+                          ]
+                        }
+                      }
+                    ] -%}
+                    {%- set rotation_due_html = "<div style='border-top:1px solid color-mix(in srgb, var(--divider-color) 78%, transparent);margin:4px 0 6px 0;'></div><div style='text-align:center;'><div style='font-size:10px;text-transform:uppercase;letter-spacing:0.06em;color:var(--secondary-text-color);text-align:center;'>" ~ due_label ~ "</div><div style='margin-top:3px;font-size:14px;font-weight:700;line-height:1.35;color:var(--primary-text-color);text-align:center;'>" ~ due_display ~ "</div></div>" -%}
+                    {%- set rotation_html = {
+                      'card': {
+                        'type': 'vertical-stack',
+                        'cards': [
+                          {
+                            'type': 'grid',
+                            'square': false,
+                            'columns': 2,
+                            'cards': rotation_action_cards
+                          },
+                          {
+                            'type': 'custom:button-card',
+                            'entity': selected_chore_sensor,
+                            'show_name': false,
+                            'show_icon': false,
+                            'show_label': false,
+                            'show_state': false,
+                            'tap_action': {'action': 'none'},
+                            'custom_fields': {
+                              'content': rotation_due_html
+                            },
+                            'styles': {
+                              'card': [
+                                {'padding': '0'},
+                                {'border-radius': '0'},
+                                {'box-shadow': 'none'},
+                                {'border': 'none'},
+                                {'background': 'transparent'}
+                              ],
+                              'grid': [
+                                {'grid-template-areas': '"content"'},
+                                {'grid-template-columns': '1fr'}
+                              ],
+                              'custom_fields': {
+                                'content': [
+                                  {'justify-self': 'stretch'},
+                                  {'width': '100%'}
+                                ]
+                              }
+                            }
+                          }
+                        ]
+                      }
+                    } -%}
+                  {%- else -%}
+                    {%- set rotation_html = '' -%}
+                  {%- endif -%}
                   {%- set chore_overview_card = {
                     'type': 'custom:button-card',
                     'entity': selected_chore_sensor,
@@ -2271,9 +2426,9 @@ views:
                         {'background-color': 'color-mix(in srgb, var(--secondary-background-color) 72%, var(--card-background-color))'}
                       ],
                       'grid': [
-                        {'grid-template-areas': '"i n status" "i l status" "details details details" "actions actions actions" "rules rules rules" "stats stats stats"' if has_action_cards else '"i n status" "i l status" "details details details" "rules rules rules" "stats stats stats"'},
+                        {'grid-template-areas': '"i n status" "i l status" "details details details" "rotation rotation rotation" "actions actions actions" "rules rules rules" "stats stats stats"' if has_action_cards else '"i n status" "i l status" "details details details" "rotation rotation rotation" "rules rules rules" "stats stats stats"'},
                         {'grid-template-columns': '32px minmax(140px, 1fr) auto'},
-                        {'grid-template-rows': 'min-content min-content min-content min-content min-content min-content' if has_action_cards else 'min-content min-content min-content min-content min-content'},
+                        {'grid-template-rows': 'min-content min-content min-content min-content min-content min-content min-content' if has_action_cards else 'min-content min-content min-content min-content min-content min-content'},
                         {'column-gap': '14px'},
                         {'row-gap': '8px'},
                         {'align-items': 'start'}
@@ -2314,6 +2469,11 @@ views:
                           {'width': '100%'},
                           {'min-width': '0'}
                         ],
+                        'rotation': [
+                          {'width': '100%'},
+                          {'min-width': '0'},
+                          {'display': 'block' if is_rotation_type else 'none'}
+                        ],
                         'actions': [
                           {'width': '100%'},
                           {'min-width': '0'},
@@ -2335,6 +2495,7 @@ views:
                       'rules': mechanics_html,
                       'stats': stats_html,
                       'details': detail_grid,
+                      'rotation': rotation_html,
                     }
                   } -%}
                 {%- endif -%}
