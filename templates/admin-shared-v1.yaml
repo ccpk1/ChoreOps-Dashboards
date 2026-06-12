@@ -1543,7 +1543,7 @@ views:
                   {%- set can_claim = chore_attrs.get('can_claim') -%}
                   {%- if claim_mode == 'steal_available' -%}
                     {%- set current_status_key = 'steal_available' -%}
-                  {%- elif can_claim == false and claim_mode not in [None, 'None', ''] and current_status_key not in ['completed', 'completed_in_part'] -%}
+                  {%- elif can_claim == false and claim_mode not in [None, 'None', ''] and current_status_key not in ['completed', 'completed_in_part', 'overdue'] -%}
                     {%- set current_status_key = claim_mode -%}
                   {%- endif -%}
                   {%- set raw_global_state = chore_attrs.get('global_state', raw_chore_state) -%}
@@ -1636,7 +1636,8 @@ views:
                   {%- endif -%}
                   {%- set context_label = '' -%}
                   {%- set context_value = '' -%}
-                  {%- set overdue_missed_state = raw_chore_state if raw_chore_state in ['overdue', 'missed'] else (raw_global_state if raw_global_state in ['overdue', 'missed'] else '') -%}
+                  {%- set overdue_missed_raw = raw_chore_state if raw_chore_state in ['overdue', 'missed'] else (raw_global_state if raw_global_state in ['overdue', 'missed'] else '') -%}
+                  {%- set overdue_missed_state = 'overdue' if overdue_missed_raw in ['overdue', 'missed'] else overdue_missed_raw -%}
                   {%- set is_rotation_type = 'rotation' in completion_type_key -%}
                   {%- set is_shared_type = completion_type_key in ['shared_all', 'shared_first'] or is_rotation_type -%}
                   {%- if overdue_missed_state != '' -%}
