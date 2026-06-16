@@ -16,6 +16,7 @@ Use this checklist before publishing dashboard registry releases.
 - [ ] Referenced template files exist under `templates/`.
 - [ ] Referenced preference docs exist under `preferences/`.
 - [ ] Translation files under `translations/` are present and syntactically valid.
+- [ ] All template `ui.get()` translation references have matching keys in `en_dashboard.json`.
 
 ## 3) Quality gates
 
