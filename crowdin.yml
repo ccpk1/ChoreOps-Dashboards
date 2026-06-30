@@ -12,3 +12,5 @@ files:
     languages_mapping:
       two_letters_code:
         "no": nb
+        "py": ru
+        "yk": uk
