@@ -12,4 +12,4 @@ files:
     languages_mapping:
       two_letters_code:
         "no": nb
-        "zh": zh-Hans
+        "zh-CN": zh-Hans
