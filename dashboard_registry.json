@@ -110,7 +110,7 @@
     {
       "template_id": "user-gamification-premier-v1",
       "display_name": "Gamification Premier",
-      "description": "Premier full user dashboard with rewards, badges, and shared production chore-row behavior",
+      "description": "Premier full user dashboard with rewards, badges, and shared production chore-row behavior, plus standard or kids chore and reward row variants",
       "audience": "user",
       "category": "full",
       "lifecycle_state": "active",

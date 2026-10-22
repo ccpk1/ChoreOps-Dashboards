@@ -341,6 +341,18 @@ Include filters run before all other filtering (Step 0 priority). When set, only
   - When `false`, description row is hidden even if reward has description.
   - Allowed: `true`, `false`.
 
+- `pref_reward_row_variant` (default: `standard`)
+  - Selects the reward row layout, the same way `pref_chore_row_variant` does for chores.
+  - `standard` keeps the compact two-column rows with claim/approve/undo buttons and claim stats.
+  - `kids` renders larger single-column rows designed for young readers:
+    - a 42px reward icon, a bold 16px reward name that wraps instead of truncating, and the cost shown as a large points value;
+    - a progress bar toward the reward's cost (with quarter ticks and a `current / cost` label) while the reward is `locked` or `available`; the bar turns from `var(--warning-color)` to `var(--success-color)` once the user has enough points;
+    - a small round state badge (requested, approved, locked) in the top-right corner, with the translated state as its tooltip;
+    - locked rows are dimmed, available rows get a `var(--primary-color)` border, requested rows use `pref_claim_accent`, approved rows a light `var(--success-color)` tint;
+    - tapping an available row claims it in one tap; while requested, an undo button appears in the bottom-right corner; hold opens more-info.
+  - The `kids` variant has no approve button: approval stays on the admin dashboard. Claim stats (last claimed, this month, total) are not shown.
+  - Allowed: `standard`, `kids`.
+
 - `pref_claim_accent` (default: `#a957fa`)
   - Accent color used for requested reward-state treatments.
   - Applies to requested reward row icon, border, background, and primary action emphasis.
@@ -524,6 +536,7 @@ Include filters run before all other filtering (Step 0 priority). When set, only
 - Prioritize urgent work: keep `pref_use_overdue_grouping: true` and use `pref_sort_within_groups: by_state_and_date`.
 - Sort rewards by price: set `pref_sort_rewards: cost_asc`.
 - Group rewards by labels: set `pref_use_label_grouping: true` and optionally define `pref_label_display_order`.
+- Make a dashboard a young child can read: set `pref_chore_row_variant: kids` and `pref_reward_row_variant: kids`.
 - Reduce header tint: set `pref_primary_tint_mix_pct: 8`.
 - Remove welcome/header fill entirely: set `pref_show_header_background: false`.
 - Keep accent borders but remove the thin line: set `pref_show_header_thin_border: false`.

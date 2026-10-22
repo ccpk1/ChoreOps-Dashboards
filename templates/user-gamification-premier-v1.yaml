@@ -935,6 +935,8 @@ views:
 
                   {%- set pref_show_reward_description = true -%}
 
+                  {%- set pref_reward_row_variant = 'standard' -%}  {#-- Options: 'standard', 'kids'. kids = larger single-column rows with a progress bar toward each reward, tap to claim. --#}
+
                   {%- set pref_default_header_collapsed = false -%}
 
                   {%- set pref_claim_accent = '#a957fa' -%}  {#-- Accent color for requested reward state and actions. --#}
@@ -952,6 +954,10 @@ views:
                   {%- set pref_exclude_label_list = pref_exclude_label_list if pref_exclude_label_list is iterable and pref_exclude_label_list is not string else [] -%}
                   {%- set pref_label_display_order = pref_label_display_order if pref_label_display_order is iterable and pref_label_display_order is not string else [] -%}
                   {%- set pref_show_reward_description = (pref_show_reward_description | default('true') | string | lower) == 'true' -%}
+                  {%- set pref_reward_row_variant = (pref_reward_row_variant | default('standard') | string | lower) -%}
+                  {%- if pref_reward_row_variant not in ['standard', 'kids'] -%}
+                    {%- set pref_reward_row_variant = 'standard' -%}
+                  {%- endif -%}
                   {%- set pref_default_header_collapsed = (pref_default_header_collapsed | default('false') | string | lower) == 'true' -%}
                   {%- set pref_claim_accent = pref_claim_accent | default('#a957fa', true) | string -%}
                   {%- set pref_primary_tint_mix_pct = pref_primary_tint_mix_pct | int(default=14) -%}
@@ -1291,6 +1297,182 @@ views:
                               } -%}
                               {%- set reward_state_display = state_map.get(reward_state, reward_state) -%}
 
+                              {%- if pref_reward_row_variant == 'kids' -%}
+                              {#-- Progress toward reward cost. Rendered only while the reward is still --#}
+                              {#-- being worked toward; a requested/approved reward has no progress left. --#}
+                              {%- set progress_html = '' -%}
+                              {%- if reward_state in ['locked', 'available'] -%}
+                                {%- set pct = (current_points / reward_cost * 100) if reward_cost > 0 else 100 -%}
+                                {%- set pct = 100 if pct > 100 else (0 if pct < 0 else pct) -%}
+                                {%- set bar_color = 'var(--success-color)' if pct >= 100 else 'var(--warning-color)' -%}
+                                {%- set tick = "<div style='position: absolute; top: 0; bottom: 0; width: 1px; background: var(--card-background-color);'></div>" -%}
+                                {%- set progress_html =
+                                  "<div style='display: flex; align-items: center; gap: 8px; width: 100%; padding: 2px 0;'>"
+                                  ~ "<div style='flex: 1; position: relative; height: 6px; background: var(--divider-color); border-radius: 999px; overflow: hidden;'>"
+                                  ~ "<div style='width:" ~ pct | round(0) | int | string ~ "%; height: 100%; background: " ~ bar_color ~ "; border-radius: 999px;'></div>"
+                                  ~ tick | replace('position: absolute;', 'position: absolute; left: 25%;')
+                                  ~ tick | replace('position: absolute;', 'position: absolute; left: 50%;')
+                                  ~ tick | replace('position: absolute;', 'position: absolute; left: 75%;')
+                                  ~ "</div>"
+                                  ~ "<div style='font-size: 11px; font-weight: 700; color: var(--secondary-text-color); white-space: nowrap;'>"
+                                  ~ current_points | string ~ " / " ~ (reward_cost | round(0) | int) | string
+                                  ~ "</div></div>"
+                                -%}
+                              {%- endif -%}
+
+                              {%- set row_accent = (
+                                pref_claim_accent if reward_state == 'requested' else
+                                'var(--success-color)' if reward_state == 'approved' else
+                                'var(--disabled-text-color)' if reward_state == 'locked' else
+                                  'var(--primary-color)'
+                              ) -%}
+                              {%- set row_icon_color = (
+                                pref_claim_accent if reward_state == 'requested' else
+                                'var(--success-color)' if reward_state == 'approved' else
+                                  'var(--primary-color)'
+                              ) -%}
+                              {%- set row_background = (
+                                'color-mix(in srgb, ' ~ pref_claim_accent ~ ' 10%, var(--card-background-color))' if reward_state == 'requested' else
+                                'color-mix(in srgb, var(--success-color) 8%, var(--card-background-color))' if reward_state == 'approved' else
+                                  'var(--card-background-color)'
+                              ) -%}
+                              {%- set badge_state_icon = (
+                                'mdi:check' if reward_state == 'requested' else
+                                'mdi:check-all' if reward_state == 'approved' else
+                                'mdi:lock-outline' if reward_state == 'locked' else
+                                  ''
+                              ) -%}
+                              {%- set badge_state_bg = (
+                                pref_claim_accent if reward_state == 'requested' else
+                                'var(--success-color)' if reward_state == 'approved' else
+                                'var(--disabled-text-color)' if reward_state == 'locked' else
+                                  'transparent'
+                              ) -%}
+                              {#-- title carries the translated state text so the icon-only badge stays readable --#}
+                              {%- set badge_state_html = ("<ha-icon icon='" ~ badge_state_icon ~ "' title='" ~ reward_state_display ~ "' style='width:16px;height:16px;transform:translateY(-4px);'></ha-icon>") if badge_state_icon != '' else '' -%}
+                              {%- set reward_points_html = "<ha-icon icon='" ~ points_icon ~ "' style='width:18px;height:18px;margin-right:4px;transform:translateY(-1px);'></ha-icon>" ~ (reward_cost | round(0) | int | string) ~ " " ~ points_label -%}
+                              {%- set reward_description_html = "<span>" ~ reward_description_safe ~ "</span>" -%}
+
+                              {%- set ns.group_cards = ns.group_cards + [{
+                                'type': 'custom:button-card',
+                                'entity': reward_sensor_eid,
+                                'name': reward_name,
+                                'icon': reward_icon,
+                                'show_name': true,
+                                'show_label': false,
+                                'show_icon': true,
+                                'tap_action': ({ 'action': 'call-service', 'service': 'button.press', 'target': {'entity_id': claim_button_eid } } if reward_state == 'available' and claim_button_eid not in ['', none] else { 'action': 'more-info' }),
+                                'hold_action': { 'action': 'more-info' },
+                                'custom_fields': {
+                                  'badge_state': badge_state_html,
+                                  'reward': reward_points_html,
+                                  'description': reward_description_html,
+                                  'progress': progress_html,
+                                  'btn_undo': {
+                                    'card': {
+                                      'type': 'custom:button-card',
+                                      'entity': reward_sensor_eid,
+                                      'icon': 'mdi:undo',
+                                      'show_name': false,
+                                      'show_icon': true,
+                                      'styles': {
+                                        'card': [
+                                          {'width': '26px'},
+                                          {'height': '26px'},
+                                          {'border-radius': '50%'},
+                                          {'background-color': 'transparent'},
+                                          {'border': '1px solid var(--divider-color)'},
+                                          {'box-shadow': 'none'}
+                                        ],
+                                        'icon': [
+                                          {'width': '15px'},
+                                          {'color': 'var(--secondary-text-color)'}
+                                        ]
+                                      },
+                                      'tap_action': ({ 'action': 'call-service', 'service': 'button.press', 'target': {'entity_id': disapprove_button_eid } } if disapprove_button_eid not in ['', none] else { 'action': 'none' })
+                                    }
+                                  }
+                                },
+                                'styles': {
+                                  'card': [
+                                    {'padding': '12px 14px'},
+                                    {'border-radius': '16px'},
+                                    {'position': 'relative'},
+                                    {'opacity': '0.65' if reward_state == 'locked' else '1.0'},
+                                    {'border': '2px solid ' ~ row_accent},
+                                    {'background-color': row_background},
+                                    {'box-shadow': 'none'}
+                                  ],
+                                  'grid': [
+                                    {'grid-template-areas': '"i n badge_state" "i progress badge_state" "reward description description"' if reward_state in ['locked', 'available'] else '"i n badge_state" "reward description description"'},
+                                    {'grid-template-columns': 'minmax(65px, max-content) 1fr 26px'},
+                                    {'grid-template-rows': 'min-content min-content min-content' if reward_state in ['locked', 'available'] else 'min-content min-content'},
+                                    {'row-gap': '4px'},
+                                    {'column-gap': '12px'},
+                                    {'align-items': 'center'}
+                                  ],
+                                  'name': [
+                                    {'justify-self': 'center'},
+                                    {'text-align': 'center'},
+                                    {'font-weight': '800'},
+                                    {'font-size': '16px'},
+                                    {'line-height': '1.2'},
+                                    {'white-space': 'normal'},
+                                    {'color': 'var(--primary-text-color)'}
+                                  ],
+                                  'icon': [
+                                    {'width': '42px'},
+                                    {'height': '42px'},
+                                    {'justify-self': 'center'},
+                                    {'align-self': 'center'},
+                                    {'color': row_icon_color}
+                                  ],
+                                  'custom_fields': {
+                                    'badge_state': [
+                                      {'justify-self': 'end'},
+                                      {'align-self': 'start'},
+                                      {'width': '26px'},
+                                      {'height': '26px'},
+                                      {'border-radius': '50%'},
+                                      {'display': 'flex'},
+                                      {'align-items': 'center'},
+                                      {'justify-content': 'center'},
+                                      {'background-color': badge_state_bg},
+                                      {'color': 'var(--primary-text-color)'}
+                                    ],
+                                    'reward': [
+                                      {'justify-self': 'center'},
+                                      {'align-self': 'start'},
+                                      {'font-size': '12px'},
+                                      {'font-weight': '700'},
+                                      {'color': 'var(--warning-color)'}
+                                    ],
+                                    'progress': [
+                                      {'justify-self': 'stretch'},
+                                      {'width': '100%'},
+                                      {'display': 'block' if reward_state in ['locked', 'available'] else 'none'}
+                                    ],
+                                    'description': [
+                                      {'justify-self': 'start'},
+                                      {'text-align': 'left'},
+                                      {'font-size': '12px'},
+                                      {'font-weight': '400'},
+                                      {'line-height': '1.3'},
+                                      {'color': 'var(--secondary-text-color)'},
+                                      {'white-space': 'normal'},
+                                      {'display': 'block' if pref_show_reward_description and reward_description_clean | length > 0 else 'none'}
+                                    ],
+                                    'btn_undo': [
+                                      {'position': 'absolute'},
+                                      {'right': '8px'},
+                                      {'bottom': '8px'},
+                                      {'z-index': '2'},
+                                      {'display': 'block' if reward_state == 'requested' else 'none'}
+                                    ]
+                                  }
+                                }
+                              }] -%}
+                              {%- else -%}
                               {%- set primary_button_eid = '' -%}
                               {%- set primary_button_icon = 'mdi:arrow-right' -%}
                               {%- set secondary_button_eid = '' -%}
@@ -1477,12 +1659,13 @@ views:
                                   }
                                 }
                               }] -%}
+                              {%- endif -%}
                             {%- endfor -%}
 
                             {{
                               {
                                 'type': 'grid',
-                                'columns': 2,
+                                'columns': 1 if pref_reward_row_variant == 'kids' else 2,
                                 'square': false,
                                 'cards': ns.group_cards if ns.group_cards | length > 0 else [{
                                   'type': 'custom:button-card',
